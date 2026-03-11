@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Boolean, Date
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Boolean, Date, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
@@ -38,7 +38,11 @@ class RegistroSorteo(Base):
     id = Column(Integer, primary_key=True)
     cedula = Column(String(50), ForeignKey("marketing_clientes_sorteos.cedula"), nullable=False)
     sorteo_id = Column(Integer, ForeignKey("marketing_sorteos_config.id"), nullable=False)
-    numero_registro = Column(String(50), nullable=False)
+    numero_registro = Column(String(100), nullable=False)  # id.tra del ticket
+    tipo_ticket = Column(String(20), nullable=True, default="betplay")  # 'betplay' | 'chance'
+    id_transaccion = Column(String(100), nullable=True)  # id.tra
+    identificacion = Column(String(100), nullable=True)  # solo betplay
+    valor = Column(String(50), nullable=True)  # valor/total del ticket
     comprobante_url = Column(String(500), nullable=True) # URL o path de la imagen del comprobante
     fecha_creacion = Column(DateTime, default=get_colombia_time)
     
@@ -52,6 +56,9 @@ class WhatsAppSession(Base):
     paso = Column(String(50), default="INICIO")  # INICIO, CEDULA, NOMBRE, TICKET, FOTO
     cedula = Column(String(50), nullable=True)
     nombre_completo = Column(String(255), nullable=True)
-    numero_registro = Column(String(100), nullable=True)
+    numero_registro = Column(String(100), nullable=True)  # id.tra del ticket en proceso
+    tipo_ticket_pendiente = Column(String(20), nullable=True)  # 'betplay' | 'chance'
+    identificacion_pendiente = Column(String(100), nullable=True)  # solo betplay
+    valor_pendiente = Column(String(50), nullable=True)  # valor del ticket en proceso
     comprobante_url = Column(String(500), nullable=True)
     ultima_interaccion = Column(DateTime, default=get_colombia_time, onupdate=get_colombia_time)

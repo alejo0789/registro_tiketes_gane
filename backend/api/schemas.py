@@ -72,6 +72,10 @@ class Registro(BaseModel):
     cedula: str
     sorteo_id: int
     numero_registro: str
+    tipo_ticket: Optional[str] = None
+    id_transaccion: Optional[str] = None
+    identificacion: Optional[str] = None
+    valor: Optional[str] = None
     comprobante_url: Optional[str] = None
     fecha_creacion: datetime
     class Config:
@@ -122,9 +126,17 @@ class WhatsAppInteractRequest(BaseModel):
     telefono: str
     texto: Optional[str] = None
     media_url: Optional[str] = None
-    media_type: Optional[str] = None # 'image', 'document', etc.
+    media_type: Optional[str] = None  # 'image', 'document', etc.
+    # Campos extraídos por n8n desde cédula
     extracted_cedula: Optional[str] = None
     extracted_nombre: Optional[str] = None
+    # Campos del tipo de documento detectado
+    tipo_documento_detectado: Optional[str] = None  # 'cedula' | 'betplay' | 'chance'
+    # Campos extraídos de tickets (betplay y chance)
+    extracted_id_tra: Optional[str] = None      # id.tra para ambos tipos
+    extracted_identificacion: Optional[str] = None  # identificacion (solo betplay)
+    extracted_valor: Optional[str] = None       # Valor recarga (betplay) o Total (chance)
+    # Compatibilidad con campo antiguo
     extracted_ticket: Optional[str] = None
 
 class WhatsAppInteractResponse(BaseModel):
@@ -154,6 +166,10 @@ class UserTableResponse(BaseModel):
 
 class ReceiptItem(BaseModel):
     numero_registro: str
+    tipo_ticket: Optional[str] = None
+    id_transaccion: Optional[str] = None
+    identificacion: Optional[str] = None
+    valor: Optional[str] = None
     comprobante_url: Optional[str]
     fecha_creacion: datetime
     nombre_sorteo: str

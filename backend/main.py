@@ -25,13 +25,43 @@ from sqlalchemy import text, inspect
 def run_migrations():
     with engine.connect() as conn:
         inspector = inspect(engine)
-        # Check for our prefixed table
+        
+        # --- marketing_clientes_sorteos ---
         t_name = "marketing_clientes_sorteos"
         if t_name in inspector.get_table_names():
             existing_cols = [c["name"] for c in inspector.get_columns(t_name)]
             if "telefono" not in existing_cols:
                 conn.execute(text(f"ALTER TABLE {t_name} ADD COLUMN telefono VARCHAR(255)"))
                 conn.commit()
+
+        # --- marketing_registros_sorteo: soporte betplay/chance ---
+        t_reg = "marketing_registros_sorteo"
+        if t_reg in inspector.get_table_names():
+            reg_cols = [c["name"] for c in inspector.get_columns(t_reg)]
+            new_reg_cols = {
+                "tipo_ticket":   "VARCHAR(20)",
+                "id_transaccion": "VARCHAR(100)",
+                "identificacion": "VARCHAR(100)",
+                "valor":          "VARCHAR(50)",
+            }
+            for col, col_type in new_reg_cols.items():
+                if col not in reg_cols:
+                    conn.execute(text(f"ALTER TABLE {t_reg} ADD COLUMN {col} {col_type}"))
+                    conn.commit()
+
+        # --- marketing_whatsapp_sessions: soporte betplay/chance ---
+        t_sess = "marketing_whatsapp_sessions"
+        if t_sess in inspector.get_table_names():
+            sess_cols = [c["name"] for c in inspector.get_columns(t_sess)]
+            new_sess_cols = {
+                "tipo_ticket_pendiente":   "VARCHAR(20)",
+                "identificacion_pendiente": "VARCHAR(100)",
+                "valor_pendiente":          "VARCHAR(50)",
+            }
+            for col, col_type in new_sess_cols.items():
+                if col not in sess_cols:
+                    conn.execute(text(f"ALTER TABLE {t_sess} ADD COLUMN {col} {col_type}"))
+                    conn.commit()
 
 try:
     run_migrations()
@@ -415,6 +445,10 @@ def get_dashboard_users(
 def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(
         models.RegistroSorteo.numero_registro,
+        models.RegistroSorteo.tipo_ticket,
+        models.RegistroSorteo.id_transaccion,
+        models.RegistroSorteo.identificacion,
+        models.RegistroSorteo.valor,
         models.RegistroSorteo.comprobante_url,
         models.RegistroSorteo.fecha_creacion,
         models.SorteoConfig.nombre_sorteo
@@ -428,6 +462,10 @@ def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session 
     return [
         schemas.ReceiptItem(
             numero_registro=r.numero_registro,
+            tipo_ticket=r.tipo_ticket,
+            id_transaccion=r.id_transaccion,
+            identificacion=r.identificacion,
+            valor=r.valor,
             comprobante_url=r.comprobante_url,
             fecha_creacion=r.fecha_creacion,
             nombre_sorteo=r.nombre_sorteo
@@ -438,10 +476,19 @@ def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session 
 def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = Depends(get_db)):
     """
     Orquestador de lógica para WhatsApp. n8n solo actúa como puente.
+    Soporta dos tipos de tickets: betplay y chance.
+    El JSON de n8n incluye tipo_documento_detectado, extracted_id_tra,
+    extracted_identificacion y extracted_valor.
     """
     telefono = data.telefono.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").strip()
     texto = data.texto.strip() if data.texto else ""
-    
+
+    # Helper para limpiar números
+    def clean_num(val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        return re.sub(r"[\.,\s]", "", val.strip())
+
     # 1. Obtener Sorteo Activo
     from backend.db.models import get_colombia_time
     today = get_colombia_time().date()
@@ -454,13 +501,16 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     if not active_sorteo:
         return {"mensaje": "Lo sentimos, no hay sorteos activos en este momento.", "paso_siguiente": "FIN"}
 
-    # --- NUEVA LÓGICA DE SALUDOS ---
+    # --- Detectar tipo de documento que llegó en esta interacción ---
+    tipo_doc = (data.tipo_documento_detectado or "").lower().strip()
+
+    # --- SALUDOS ---
     palabras_saludo = ["hola", "buen", "saludos", "hi", "menu", "inicio", "reinicio"]
-    es_saludo = any(s in texto.lower() for s in palabras_saludo)
+    es_saludo = any(s in texto.lower() for s in palabras_saludo) and not tipo_doc
 
     # 2. Obtener o Crear Sesión
     session = db.query(models.WhatsAppSession).filter(models.WhatsAppSession.telefono == telefono).first()
-    
+
     # 3. VERIFICACIÓN UNIVERSAL DE REGISTRO
     user = db.query(models.User).filter(models.User.telefono == telefono).first()
 
@@ -475,28 +525,32 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             session.paso = "CEDULA"
         db.commit()
 
-    # Si es un saludo y ya está registrado, forzamos que pida ticket/foto
+    # Si es saludo, reiniciar al paso correcto
     if es_saludo:
         if user:
             session.paso = "TICKET"
             db.commit()
             return {
-                "mensaje": f"¡Hola de nuevo, *{user.nombre_completo.split()[0]}*! 👋\n\nPor favor, envíame la *foto de tu ticket* 🎟️ para registrar tu participación.",
+                "mensaje": f"¡Hola de nuevo, *{user.nombre_completo.split()[0]}*! 👋\n\n"
+                           f"Envíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
                 "paso_siguiente": "TICKET"
             }
         else:
             session.paso = "CEDULA"
             db.commit()
             return {
-                "mensaje": "¡Hola! 👋 Estás participando por la *moto eléctrica* 🏍️.\n\nPara comenzar, por favor envíame una *foto clara de tu cédula* 📸.\n\n_Sus datos serán tratados de acuerdo a nuestra política de tratamiento de datos y la imagen de su cédula será eliminada del sistema una vez completado el registro._",
+                "mensaje": "¡Hola! 👋 Estás participando por la *moto eléctrica* 🏙️.\n\n"
+                           "Para comenzar, envíame una *foto clara de tu cédula* 📸.\n\n"
+                           "_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
                 "paso_siguiente": "CEDULA"
             }
 
-    # 4. MÁQUINA DE ESTADOS (Imitando el Frontend)
-    
+    # =========================================================
+    # 4. MÁQUINA DE ESTADOS
+    # =========================================================
+
     # --- PASO: INICIO ---
     if session.paso == "INICIO":
-        # Esta parte ya se manejó arriba, pero por precaución:
         if user:
             session.paso = "TICKET"
             db.commit()
@@ -514,42 +568,69 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
     # --- PASO: CEDULA ---
     if session.paso == "CEDULA":
-        # Prioridad a lo extraído por n8n, sino al texto manual
-        val = data.extracted_cedula or texto
-        val = re.sub(r"\D", "", val)
-        
-        if not val.isdigit() or len(val) < 6:
-            return {"mensaje": "⚠️ No logré leer la cédula. Por favor escríbela manualmente o envía una foto más clara.", "paso_siguiente": "CEDULA"}
-        
-        session.cedula = val
-        user = db.query(models.User).filter(models.User.cedula == val).first()
-        if user:
-            session.nombre_completo = user.nombre_completo
-            session.paso = "TICKET"
-            db.commit()
-            return {
-                "mensaje": f"Bienvenido de nuevo, *{user.nombre_completo.split()[0]}*. 👋\n\nIngresa el *número de ticket* que deseas registrar o envía la foto.",
-                "paso_siguiente": "TICKET"
-            }
-        else:
-            # Si n8n extrajo el nombre de la cédula, lo usamos
-            if data.extracted_nombre:
-                session.nombre_completo = data.extracted_nombre
+        # Si n8n detectó una cédula en la imagen
+        if tipo_doc == "cedula" or data.extracted_cedula:
+            val = clean_num(data.extracted_cedula or texto)
+            if not val or not val.isdigit() or len(val) < 6:
+                return {"mensaje": "⚠️ No logré leer la cédula. Por favor escíbela manualmente o envía una foto más clara.", "paso_siguiente": "CEDULA"}
+
+            session.cedula = val
+            user_existing = db.query(models.User).filter(models.User.cedula == val).first()
+            if user_existing:
+                session.nombre_completo = user_existing.nombre_completo
                 session.paso = "TICKET"
                 db.commit()
-                # Crear usuario de una vez
-                new_user = models.User(cedula=session.cedula, nombre_completo=data.extracted_nombre, telefono=telefono)
-                db.add(new_user)
-                db.commit()
                 return {
-                    "mensaje": f"Detecté tu nombre: *{data.extracted_nombre}*. ✅\n\nAhora, ingresa el *número de ticket* que deseas registrar.",
+                    "mensaje": f"Bienvenido de nuevo, *{user_existing.nombre_completo.split()[0]}*. 👋\n\n"
+                               "Envíame la *foto de tu ticket Betplay o Chance* para registrarlo.",
                     "paso_siguiente": "TICKET"
                 }
-            
+            else:
+                if data.extracted_nombre:
+                    session.nombre_completo = data.extracted_nombre
+                    session.paso = "TICKET"
+                    db.commit()
+                    new_user = models.User(cedula=session.cedula, nombre_completo=data.extracted_nombre, telefono=telefono)
+                    db.add(new_user)
+                    db.commit()
+                    return {
+                        "mensaje": f"Detecté tu nombre: *{data.extracted_nombre}*. ✅\n\n"
+                                   "Ahora envíame la *foto de tu ticket Betplay o Chance*.",
+                        "paso_siguiente": "TICKET"
+                    }
+                session.paso = "NOMBRE"
+                db.commit()
+                return {
+                    "mensaje": "No tenemos tu registro aún. ¿Cuál es tu *nombre completo*?",
+                    "paso_siguiente": "NOMBRE"
+                }
+
+        # Si llegó un ticket en vez de cédula, avisamos
+        elif tipo_doc in ("betplay", "chance"):
+            return {
+                "mensaje": "⚠️ Primero necesito tu *cédula*. Por favor envía una foto clara de ella.",
+                "paso_siguiente": "CEDULA"
+            }
+        else:
+            # Texto manual de cédula
+            val = clean_num(texto)
+            if not val or not val.isdigit() or len(val) < 6:
+                return {"mensaje": "⚠️ Por favor envía la foto de tu cédula o escíbela manualmente (solo números).", "paso_siguiente": "CEDULA"}
+            session.cedula = val
+            user_existing = db.query(models.User).filter(models.User.cedula == val).first()
+            if user_existing:
+                session.nombre_completo = user_existing.nombre_completo
+                session.paso = "TICKET"
+                db.commit()
+                return {
+                    "mensaje": f"Bienvenido de nuevo, *{user_existing.nombre_completo.split()[0]}*. 👋\n\n"
+                               "Envíame la *foto de tu ticket Betplay o Chance*.",
+                    "paso_siguiente": "TICKET"
+                }
             session.paso = "NOMBRE"
             db.commit()
             return {
-                "mensaje": "No tenemos tu registro aún. ¿Cuál es tu *nombre completo*?",
+                "mensaje": "No tenemos tu registro. ¿Cuál es tu *nombre completo*?",
                 "paso_siguiente": "NOMBRE"
             }
 
@@ -558,50 +639,110 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         val_nombre = data.extracted_nombre or texto
         if len(val_nombre) < 3:
             return {"mensaje": "⚠️ Por favor ingresa tu nombre completo.", "paso_siguiente": "NOMBRE"}
-        
+
         session.nombre_completo = val_nombre
         session.paso = "TICKET"
         db.commit()
-        # Crear el usuario
         new_user = models.User(cedula=session.cedula, nombre_completo=val_nombre, telefono=telefono)
         db.add(new_user)
         db.commit()
-        
         return {
-            "mensaje": f"Mucho gusto, *{val_nombre}*. Ahora, ingresa el *número de ticket* o envía la foto.",
+            "mensaje": f"Mucho gusto, *{val_nombre}*. 😊\n\nAhora envíame la *foto de tu ticket Betplay o Chance*.",
             "paso_siguiente": "TICKET"
         }
 
     # --- PASO: TICKET ---
     if session.paso == "TICKET":
-        # Prioridad a lo extraído de la colilla por n8n
-        val_ticket = data.extracted_ticket or texto
-        # LIMPIEZA DE TICKET: Eliminar guiones, puntos, espacios y numerales
-        val_ticket = val_ticket.replace("-", "").replace(".", "").replace(" ", "").replace("#", "").strip()
-        
-        if len(val_ticket) < 1:
-            return {"mensaje": "⚠️ Por favor ingresa el número de ticket o envía la foto.", "paso_siguiente": "TICKET"}
-        
-        # Validar si el ticket ya existe
-        existing = db.query(models.RegistroSorteo).filter(
-            models.RegistroSorteo.sorteo_id == active_sorteo.id,
-            models.RegistroSorteo.numero_registro == val_ticket
-        ).first()
-        
-        if existing:
-            return {"mensaje": f"⚠️ El ticket *{val_ticket}* ya ha sido registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
-            
-        session.numero_registro = val_ticket
-        # Si ya tengo imagen (porque n8n la procesó y extrajo el ticket), puedo intentar registrar de una vez
-        if data.media_url and data.extracted_ticket:
-            session.paso = "FOTO" # Simulamos que ya envió la foto
-            data.media_url = data.media_url # Aseguramos que pase al siguiente bloque
-            # No retornamos aquí, dejamos que el flujo caiga al bloque de FOTO
+        # ===== CASO: n8n detectó BETPLAY =====
+        if tipo_doc == "betplay" and data.extracted_id_tra:
+            id_tra = clean_num(data.extracted_id_tra)
+            identificacion = clean_num(data.extracted_identificacion)
+            valor = clean_num(data.extracted_valor)
+
+            # Verificar duplicado por id_tra en el sorteo
+            existing = db.query(models.RegistroSorteo).filter(
+                models.RegistroSorteo.sorteo_id == active_sorteo.id,
+                models.RegistroSorteo.numero_registro == id_tra
+            ).first()
+            if existing:
+                return {"mensaje": f"⚠️ El ticket Betplay con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+
+            # Guardar datos en sesión para confirmar con la foto
+            session.numero_registro = id_tra
+            session.tipo_ticket_pendiente = "betplay"
+            session.identificacion_pendiente = identificacion
+            session.valor_pendiente = valor
+
+            if data.media_url:
+                # Ya tenemos la foto del ticket, registrar directamente
+                session.paso = "FOTO"
+                db.commit()
+                # Caer al bloque FOTO
+            else:
+                session.paso = "FOTO"
+                db.commit()
+                return {
+                    "mensaje": f"🏟️ *Ticket Betplay detectado* ✅\n"
+                               f"\u2022 ID Transacción: *{id_tra}*\n"
+                               f"\u2022 Identificación: *{identificacion or 'N/A'}*\n"
+                               f"\u2022 Valor: *${valor or 'N/A'}*\n\n"
+                               "Envíame la *foto clara del ticket* para completar el registro.",
+                    "paso_siguiente": "FOTO"
+                }
+
+        # ===== CASO: n8n detectó CHANCE =====
+        elif tipo_doc == "chance" and data.extracted_id_tra:
+            id_tra = clean_num(data.extracted_id_tra)
+            valor = clean_num(data.extracted_valor)
+
+            existing = db.query(models.RegistroSorteo).filter(
+                models.RegistroSorteo.sorteo_id == active_sorteo.id,
+                models.RegistroSorteo.numero_registro == id_tra
+            ).first()
+            if existing:
+                return {"mensaje": f"⚠️ El ticket Chance con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+
+            session.numero_registro = id_tra
+            session.tipo_ticket_pendiente = "chance"
+            session.identificacion_pendiente = None
+            session.valor_pendiente = valor
+
+            if data.media_url:
+                session.paso = "FOTO"
+                db.commit()
+                # Caer al bloque FOTO
+            else:
+                session.paso = "FOTO"
+                db.commit()
+                return {
+                    "mensaje": f"🏟️ *Ticket Chance detectado* ✅\n"
+                               f"\u2022 ID Transacción: *{id_tra}*\n"
+                               f"\u2022 Total: *${valor or 'N/A'}*\n\n"
+                               "Envíame la *foto clara del ticket* para completar el registro.",
+                    "paso_siguiente": "FOTO"
+                }
+
+        # ===== TEXTO MANUAL (compatibilidad antigua) =====
         else:
+            val_ticket = data.extracted_ticket or texto
+            val_ticket = val_ticket.replace("-", "").replace(".", "").replace(" ", "").replace("#", "").strip()
+
+            if len(val_ticket) < 1:
+                return {"mensaje": "⚠️ Por favor envía la *foto de tu ticket Betplay o Chance* para registrarlo.", "paso_siguiente": "TICKET"}
+
+            existing = db.query(models.RegistroSorteo).filter(
+                models.RegistroSorteo.sorteo_id == active_sorteo.id,
+                models.RegistroSorteo.numero_registro == val_ticket
+            ).first()
+            if existing:
+                return {"mensaje": f"⚠️ El ticket *{val_ticket}* ya ha sido registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+
+            session.numero_registro = val_ticket
+            session.tipo_ticket_pendiente = "manual"
             session.paso = "FOTO"
             db.commit()
             return {
-                "mensaje": f"Ticket *{val_ticket}* recibido. 🎟️\n\nAhora envíame una *foto clara* del ticket para completar el registro.",
+                "mensaje": f"Ticket *{val_ticket}* recibido. 🏟️\n\nAhora envíame la *foto clara del ticket* para completar el registro.",
                 "paso_siguiente": "FOTO"
             }
 
@@ -609,37 +750,50 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     if session.paso == "FOTO":
         if not data.media_url:
             return {"mensaje": "⚠️ Por favor, envía la *foto* del ticket para finalizar.", "paso_siguiente": "FOTO"}
-        
+
+        tipo = session.tipo_ticket_pendiente or "betplay"
+        id_tra = session.numero_registro
+        identificacion = session.identificacion_pendiente
+        valor = session.valor_pendiente
+
         # Registrar en la DB
         new_reg = models.RegistroSorteo(
             cedula=session.cedula,
             sorteo_id=active_sorteo.id,
-            numero_registro=session.numero_registro,
+            numero_registro=id_tra,
+            tipo_ticket=tipo,
+            id_transaccion=id_tra,
+            identificacion=identificacion,
+            valor=valor,
             comprobante_url=data.media_url
         )
         db.add(new_reg)
-        db.flush() # Asegurar que el nuevo registro se cuente en la siguiente consulta
-        
+        db.flush()
+
         # Conteo para la moto
         total = db.query(func.count(models.RegistroSorteo.id)).filter(
             models.RegistroSorteo.cedula == session.cedula,
             models.RegistroSorteo.sorteo_id == active_sorteo.id
         ).scalar()
-        
+
         MOTO_GOAL = 10
         restantes = max(0, MOTO_GOAL - total)
-        
-        # Limpiar sesión para el siguiente registro
-        session.paso = "TICKET" # Volvemos a pedir ticket por si quiere registrar otro
+
+        # Limpiar sesión
+        session.paso = "TICKET"
         session.numero_registro = None
+        session.tipo_ticket_pendiente = None
+        session.identificacion_pendiente = None
+        session.valor_pendiente = None
         db.commit()
-        
-        msg = f"✅ ¡Ticket registrado exitosamente! 🎉\n\nLlevas *{total} tickets* registrados."
+
+        tipo_label = "🎰 Betplay" if tipo == "betplay" else "🏵️ Chance"
+        msg = f"✅ ¡Ticket {tipo_label} registrado exitosamente! 🎉\n\nLlevas *{total} tickets* registrados."
         if restantes > 0:
-            msg += f"\n\nTe faltan *{restantes}* para participar por la *moto eléctrica*. 🏍️\n\nSi tienes otro ticket, envíalo ahora."
+            msg += f"\n\nTe faltan *{restantes}* para participar por la *moto eléctrica*. 🏙️\n\nSi tienes otro ticket, envíalo ahora."
         else:
-            msg += "\n\n¡Felicidades! Ya estás participando por la *moto*. 🏍️✨\n\nSi tienes más tickets, puedes seguir registrándolos."
-            
+            msg += "\n\n¡Felicidades! Ya estás participando por la *moto*. 🏙️✨\n\nSi tienes más tickets, puedes seguir registrándolos."
+
         return {"mensaje": msg, "paso_siguiente": "TICKET", "total_tickets": total}
 
     return {"mensaje": "Opción no reconocida.", "paso_siguiente": "INICIO"}
