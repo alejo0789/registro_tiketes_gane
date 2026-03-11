@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Propuesta Comercial - Sistema de Sorteos Acertemos</title>
     <style>
         :root {
-            --primary-blue: #002a5c;
+            --owo-purple: #8B5A9B;
+            --owo-purple-dark: #6B4478;
+            --owo-purple-light: #A87BB8;
+            --owo-purple-glow: rgba(139, 90, 155, 0.25);
+            --owo-violet: #9D4EDD;
+            --owo-magenta: #C77DFF;
+            --owo-cyan: #00B4D8;
+            --owo-cyan-glow: rgba(0, 180, 216, 0.2);
             --accent-gold: #ffcc00;
             --bg-color: #f8fafc;
             --success-green: #22c55e;
@@ -23,11 +31,11 @@
         }
 
         .brand-header {
-            background-color: var(--primary-blue);
-            border-bottom: 5px solid var(--accent-gold);
+            background: linear-gradient(135deg, var(--owo-purple), var(--owo-purple-dark));
+            border-bottom: 5px solid var(--owo-purple-light);
             padding: 24px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             color: white;
             position: sticky;
             top: 0;
@@ -61,7 +69,7 @@
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border-left: 5px solid var(--accent-gold);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: flex;
@@ -71,7 +79,7 @@
 
         .featured-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
         }
 
         .featured-icon {
@@ -99,7 +107,7 @@
             color: var(--text-dark);
             font-size: 1.05rem;
         }
-        
+
         .featured-description ul {
             margin-top: 10px;
             padding-left: 20px;
@@ -117,7 +125,7 @@
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 40px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -161,7 +169,7 @@
         .message-bubble {
             padding: 14px 18px;
             border-radius: 18px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
             font-size: 1.05rem;
             animation: slideFadeUp 0.4s ease-out;
         }
@@ -182,8 +190,15 @@
         }
 
         @keyframes slideFadeUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .flow-container {
@@ -199,7 +214,7 @@
             background: white;
             border-radius: 16px;
             padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             align-items: center;
             position: relative;
@@ -213,11 +228,11 @@
             top: 0;
             bottom: 0;
             width: 8px;
-            background: var(--accent-gold);
+            background: var(--owo-purple-light);
         }
 
         .step-number {
-            background: var(--primary-blue);
+            background: linear-gradient(135deg, var(--owo-purple), var(--owo-violet));
             color: white;
             font-size: 2rem;
             font-weight: bold;
@@ -228,8 +243,8 @@
             justify-content: center;
             border-radius: 50%;
             flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0, 42, 92, 0.2);
-            border: 3px solid var(--accent-gold);
+            box-shadow: 0 4px 10px var(--owo-purple-glow);
+            border: 3px solid var(--owo-purple-light);
         }
 
         .step-content {
@@ -259,21 +274,24 @@
             max-width: 100%;
             max-height: 400px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             border: 5px solid #f8fafc;
             object-fit: contain;
             transition: transform 0.3s ease;
         }
-        
+
         .screenshot-img:hover {
             transform: scale(1.03);
         }
 
         @media (max-width: 768px) {
-            .flow-step, .flow-step[style*="flex-direction: row-reverse"] {
+
+            .flow-step,
+            .flow-step[style*="flex-direction: row-reverse"] {
                 flex-direction: column !important;
                 text-align: center;
             }
+
             .flow-step::before {
                 width: 100%;
                 height: 8px;
@@ -282,20 +300,20 @@
         }
 
         .price-card {
-            background: var(--primary-blue);
+            background: linear-gradient(135deg, var(--owo-purple-dark), var(--owo-purple));
             color: white;
             border-radius: 16px;
             padding: 40px;
             text-align: center;
-            border-bottom: 8px solid var(--accent-gold);
-            box-shadow: 0 15px 30px rgba(0,42,92,0.2);
+            border-bottom: 8px solid var(--owo-violet);
+            box-shadow: 0 15px 30px var(--owo-purple-glow);
             margin-top: 50px;
             position: relative;
             overflow: hidden;
         }
 
         .price-card h2 {
-            color: var(--accent-gold);
+            color: white;
             margin-top: 0;
             font-size: 2.2rem;
         }
@@ -304,7 +322,7 @@
             font-size: 4rem;
             font-weight: bold;
             margin: 20px 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .price span {
@@ -312,7 +330,7 @@
             opacity: 0.8;
             font-weight: normal;
         }
-        
+
         .investment-details {
             font-size: 1.2rem;
             color: #e2e8f0;
@@ -331,7 +349,7 @@
             transition: background 0.3s;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-decoration: none;
             display: inline-block;
         }
@@ -339,7 +357,7 @@
         .cta-button:hover {
             background-color: #16a34a;
         }
-        
+
         .footer {
             text-align: center;
             margin-top: 50px;
@@ -354,54 +372,69 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
+
             .brand-header {
                 position: static !important;
                 box-shadow: none !important;
             }
+
             .container {
                 max-width: 100%;
                 margin: 0 auto;
             }
+
             .chat-section-title {
                 page-break-before: always;
                 break-before: always;
                 page-break-after: avoid;
                 break-after: avoid;
             }
-            .featured-card, .flow-step, .price-card {
+
+            .featured-card,
+            .flow-step,
+            .price-card {
                 page-break-inside: avoid;
                 break-inside: avoid;
                 box-shadow: none !important;
                 border: 1px solid #e2e8f0;
             }
+
             .price-card {
-                background: var(--primary-blue) !important;
+                background: var(--owo-purple) !important;
                 color: white !important;
             }
-            .price-card h2, .price-card .price {
-                color: var(--accent-gold) !important;
+
+            .price-card h2,
+            .price-card .price {
+                color: white !important;
             }
+
             .flow-step::before {
                 display: none !important;
             }
+
             .flow-step {
-                border-left: 8px solid var(--accent-gold) !important;
+                border-left: 8px solid var(--owo-purple-light) !important;
             }
         }
     </style>
 </head>
+
 <body>
 
     <header class="brand-header">
-        <img src="assets/acertemos_logo.png" alt="Acertemos" style="max-height: 60px; display: block; margin: 0 auto 10px auto;">
+        <img src="assets/features.webp" alt="BUGS"
+            style="max-height: 100px; display: block; margin: 0 auto 15px auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
         <h1>PROPUESTA COMERCIAL</h1>
     </header>
 
     <div class="container">
-        
+
         <div class="intro">
             <h2>Sistema Automatizado de Sorteos por WhatsApp</h2>
-            <p>Una solución integral e inteligente que automatiza la recepción, validación y registro de tickets de sorteo a través de inteligencia artificial instalada directamente en WhatsApp, brindando una experiencia Premium para el usuario y control total para la administración.</p>
+            <p>Una solución integral e inteligente que automatiza la recepción, validación y registro de tickets de
+                sorteo a través de inteligencia artificial instalada directamente en WhatsApp, brindando una experiencia
+                Premium para el usuario y control total para la administración.</p>
         </div>
 
         <div class="featured-card">
@@ -409,10 +442,13 @@
             <div class="featured-content">
                 <h2 class="featured-title">1. Gestión Integral de Sorteos</h2>
                 <div class="featured-description">
-                    Capacidad completa para registrar y administrar diferentes tipos de sorteos desde un panel unificado.
+                    Capacidad completa para registrar y administrar diferentes tipos de sorteos desde un panel
+                    unificado.
                     <ul>
-                        <li><strong>Activación por períodos:</strong> Define fechas de inicio y fin para cada sorteo automáticamente.</li>
-                        <li><strong>Múltiples mecánicas:</strong> Soporta distintas dinámicas promocionales simultáneas.</li>
+                        <li><strong>Activación por períodos:</strong> Define fechas de inicio y fin para cada sorteo
+                            automáticamente.</li>
+                        <li><strong>Múltiples mecánicas:</strong> Soporta distintas dinámicas promocionales simultáneas.
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -425,7 +461,9 @@
                 <div class="featured-description">
                     Atención 24/7 sin intervención manual, con flujos de conversación naturales y memoria contextual.
                     <ul>
-                        <li><strong>Registro sin fricción:</strong> Solo se pide la foto de la cédula o el número en la primera interacción. El teléfono se obtiene automáticamente. El sistema <em>recuerda</em> al usuario en futuros registros.</li>
+                        <li><strong>Registro sin fricción:</strong> Solo se pide la foto de la cédula o el número en la
+                            primera interacción. El teléfono se obtiene automáticamente. El sistema <em>recuerda</em> al
+                            usuario en futuros registros.</li>
                         <li><strong>Recepción ágil:</strong> El usuario solo envía la foto o texto de su ticket.</li>
                     </ul>
                 </div>
@@ -439,8 +477,10 @@
                 <div class="featured-description">
                     No más digitación manual. El sistema lee y valida los tickets enviados por los usuarios.
                     <ul>
-                        <li><strong>Lectura de diferentes tickets:</strong> Reconoce el consecutivo y valores depositados en distintos formatos de tirillas.</li>
-                        <li><strong>Validación de valores:</strong> Verifica que el monto del ticket cumpla con el mínimo exigido por el sorteo.</li>
+                        <li><strong>Lectura de diferentes tickets:</strong> Reconoce el consecutivo y valores
+                            depositados en distintos formatos de tirillas.</li>
+                        <li><strong>Validación de valores:</strong> Verifica que el monto del ticket cumpla con el
+                            mínimo exigido por el sorteo.</li>
                     </ul>
                 </div>
             </div>
@@ -453,8 +493,10 @@
                 <div class="featured-description">
                     Protege el sorteo contra trampas e intentos de registro múltiple.
                     <ul>
-                        <li><strong>Bloqueo de duplicados:</strong> Si un ticket ya fue registrado, se rechaza automáticamente notificando al usuario.</li>
-                        <li><strong>Trazabilidad:</strong> Todo ticket queda atado a la cédula validada y marca de tiempo exacta.</li>
+                        <li><strong>Bloqueo de duplicados:</strong> Si un ticket ya fue registrado, se rechaza
+                            automáticamente notificando al usuario.</li>
+                        <li><strong>Trazabilidad:</strong> Todo ticket queda atado a la cédula validada y marca de
+                            tiempo exacta.</li>
                     </ul>
                 </div>
             </div>
@@ -466,29 +508,33 @@
                 <div class="step-number">1</div>
                 <div class="step-content">
                     <h3>Registro Ágil sin Fricción</h3>
-                    <p>En el primer contacto, el bot solicita la foto de la cédula o el número de manera amigable para crear el perfil, obteniendo el teléfono en segundo plano automáticamente. Una vez registrado, el sistema recordará al usuario para futuras interacciones.</p>
+                    <p>En el primer contacto, el bot solicita la foto de la cédula o el número de manera amigable para
+                        crear el perfil, obteniendo el teléfono en segundo plano automáticamente. Una vez registrado, el
+                        sistema recordará al usuario para futuras interacciones.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/cedula.jpg" alt="Registro Cédula" class="screenshot-img">
                 </div>
             </div>
-            
+
             <div class="flow-step" style="flex-direction: row-reverse;">
                 <div class="step-number">2</div>
                 <div class="step-content">
                     <h3>Recepción de Tickets</h3>
-                    <p>El usuario simplemente envía la imagen de su ticket a través del chat, como si estuviera hablando con un asesor humano. El sistema procesa la imagen de forma rápida e intuitiva.</p>
+                    <p>El usuario simplemente envía la imagen de su ticket a través del chat, como si estuviera hablando
+                        con un asesor humano. El sistema procesa la imagen de forma rápida e intuitiva.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/tiket.jpg" alt="Envío Ticket" class="screenshot-img">
                 </div>
             </div>
-            
+
             <div class="flow-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
                     <h3>Validación Instantánea por IA</h3>
-                    <p>La IA extrae los datos (valor, número de ticket) y valida si cumple con las condiciones y si no es un ticket duplicado. Al finalizar, el usuario recibe su confirmación al instante.</p>
+                    <p>La IA extrae los datos (valor, número de ticket) y valida si cumple con las condiciones y si no
+                        es un ticket duplicado. Al finalizar, el usuario recibe su confirmación al instante.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/validacion.jpg" alt="Validación IA" class="screenshot-img">
@@ -498,8 +544,21 @@
             <div class="flow-step" style="flex-direction: row-reverse;">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <h3>Dashboard y Almacenamiento en la Nube</h3>
-                    <p>Toda la información extraída y validada es guardada de forma segura y clasificada automáticamente por sorteo en un panel de administración personalizado. Además, cuentas con <strong>15 GB de almacenamiento inicial gratuito</strong> disponible para todos tus sorteos.</p>
+                    <h3>Control Detallado de Registros</h3>
+                    <p>Visualiza el detalle completo de cada participación con el ID de transacción, identificación del apostador y el valor total del ticket, con la posibilidad de implementar filtrado por tipo de ticket o por valor.</p>
+                </div>
+                <div class="screenshot-wrapper">
+                    <img src="screenshots/dashboard 2.jpg" alt="Detalle de Tickets" class="screenshot-img">
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Dashboard y Nube Administrativa</h3>
+                    <p>Toda la información extraída y validada es guardada de forma segura y clasificada automáticamente
+                        por sorteo en un panel de administración personalizado. Además, cuentas con <strong>15 GB de
+                            almacenamiento inicial gratuito</strong> disponible para todos tus sorteos.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/dashboard.png" alt="Dashboard Administrativo" class="screenshot-img">
@@ -509,16 +568,19 @@
 
         <div class="price-card">
             <h2>Propuesta de Inversión</h2>
-            <p class="investment-details">Desarrollo a la medida de la plataforma integral (Backend, IA OCR, Conexión WhatsApp, Base de Datos y Panel de Administración)</p>
+            <p class="investment-details">Desarrollo a la medida de la plataforma integral (Backend, IA OCR, Conexión
+                WhatsApp, Base de Datos y Panel de Administración)</p>
             <div class="price">$3,000 <span>USD</span></div>
             <p><strong>Único Pago</strong></p>
-            <p style="font-size: 1.1rem; margin-top: 10px; opacity: 0.9;">Incluye alojamiento de la información por 1 año y soporte técnico por 6 meses.</p>
+            <p style="font-size: 1.1rem; margin-top: 10px; opacity: 0.9;">Incluye alojamiento de la información por 1
+                año y soporte técnico por 3 meses.</p>
         </div>
-        
+
         <div class="footer">
             <p>&copy; 2026 - Propuesta Comercial Confidencial</p>
         </div>
 
     </div>
 </body>
+
 </html>

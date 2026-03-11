@@ -1,58 +1,62 @@
 import os
 import sys
-from sqlalchemy.orm import sessionmaker
+import io
 
-# 1. Asegurar que Python encuentre el paquete 'backend'
+# 1. Asegurar codificación UTF-8 en consola para evitar errores con caracteres especiales en Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+# 2. Asegurar que Python encuentre el paquete 'backend'
 sys.path.append(os.getcwd())
 
-from backend.db.session import engine, SessionLocal
+# Importamos la URL para verificar la conexión
+from backend.db.session import engine, SessionLocal, DATABASE_URL
 from backend.db.models import RegistroSorteo, WhatsAppSession, User
 
 def delete_user_data(cedula: str):
     db = SessionLocal()
     
     try:
-        print(f"--- Iniciando eliminación total de registros para la cédula: {cedula} ---")
+        print(f"\n--- Iniciando eliminacion total de registros para la cedula: {cedula} ---")
         
         # 1. Borrar registros de sorteo asociados a la cédula
         registros_borrados = db.query(RegistroSorteo).filter(RegistroSorteo.cedula == cedula).delete()
-        print(f"✅ Se eliminaron {registros_borrados} tickets registrados.")
+        print(f"[OK] Se eliminaron {registros_borrados} tickets registrados.")
         
         # 2. Borrar sesión de WhatsApp activa para este usuario
-        # (Esto reinicia el flujo del bot si el usuario vuelve a escribir)
         sesiones_borradas = db.query(WhatsAppSession).filter(WhatsAppSession.cedula == cedula).delete()
-        print(f"✅ Se eliminaron {sesiones_borradas} sesiones de WhatsApp.")
+        print(f"[OK] Se eliminaron {sesiones_borradas} sesiones de WhatsApp.")
         
-        # 3. Opcional: Borrar al usuario de la tabla de clientes (Si prefieres dejarlo como nuevo)
-        # Si prefieres conservar al usuario y solo borrar sus tickets, comenta la siguiente línea:
+        # 3. Borrar al usuario de la tabla de clientes
         usuarios_borrados = db.query(User).filter(User.cedula == cedula).delete()
-        print(f"✅ Se eliminó al usuario de la tabla de clientes.")
+        print(f"[OK] Se elimino al usuario de la tabla de clientes.")
 
         db.commit()
-        print(f"\n--- Limpieza completada con éxito para {cedula} ---")
+        print(f"--- Limpieza completada con exito para {cedula} ---")
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Error durante la eliminación: {e}")
+        print(f"[ERROR] Durante la eliminacion: {e}")
     finally:
         db.close()
 
 if __name__ == "__main__":
-    # Puedes pasar las cédulas por línea de comandos o editarlas aquí:
-    # Ejemplo: python remove_all_user_records.py 123,456,789
+    # Mostrar a qué base de datos nos estamos conectando realmente
+    print("=" * 60)
+    print(f"CONEXION ACTUAL: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
+    print("=" * 60)
+
     if len(sys.argv) > 1:
         ENTRADA = sys.argv[1]
     else:
-        # Edita esta variable con las cédulas separadas por coma
         ENTRADA = "1113783425"
 
-    # Procesar la entrada: separar por comas, quitar espacios y filtrar vacíos
     cedulas = [c.strip() for c in ENTRADA.split(",") if c.strip()]
 
     if not cedulas:
-        print("⚠️ No se proporcionaron cédulas para eliminar.")
+        print("WARN: No se proporcionaron cedulas para eliminar.")
     else:
-        print(f"🚀 Iniciando eliminación para {len(cedulas)} usuarios...")
+        print(f"Procesando eliminacion para {len(cedulas)} usuarios...")
         for cedula in cedulas:
             delete_user_data(cedula)
-        print("\n✨ Proceso finalizado.")
+        print("\nProceso finalizado.")
