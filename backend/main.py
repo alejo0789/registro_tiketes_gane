@@ -788,7 +788,19 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         db.commit()
 
         tipo_label = "🎰 Betplay" if tipo == "betplay" else "🏵️ Chance"
-        msg = f"✅ ¡Ticket {tipo_label} registrado exitosamente! 🎉\n\nLlevas *{total} tickets* registrados."
+        
+        # Formatear el valor si existe
+        valor_str = f"${int(valor):,}".replace(",", ".") if valor and valor.isdigit() else (f"${valor}" if valor else "N/A")
+
+        msg = f"✅ ¡Ticket {tipo_label} registrado exitosamente! 🎉\n\n"
+        msg += f"📄 *Detalles:* \n"
+        msg += f"\u2022 *ID Transacción:* {id_tra}\n"
+        if tipo == "betplay" and identificacion:
+            msg += f"\u2022 *Identificación:* {identificacion}\n"
+        msg += f"\u2022 *Valor:* {valor_str}\n\n"
+        
+        msg += f"Llevas *{total} tickets* registrados."
+        
         if restantes > 0:
             msg += f"\n\nTe faltan *{restantes}* para participar por la *moto eléctrica*. 🏙️\n\nSi tienes otro ticket, envíalo ahora."
         else:
