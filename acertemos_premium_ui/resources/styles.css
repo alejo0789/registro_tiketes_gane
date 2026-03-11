@@ -1,0 +1,273 @@
+/* ===================================
+   ACERTEMOS PREMIUM UI - DESIGN SYSTEM
+   =================================== */
+
+:root {
+    /* Corporate Identity */
+    --acertemos-blue: #002147;
+    --acertemos-gold: #ffcc00;
+    --acertemos-gold-dark: #e6b800;
+
+    /* Theme Palette */
+    --primary-color: #002a5c;
+    --primary-light: #00408c;
+    --primary-dark: #001a38;
+    --primary-gradient: linear-gradient(135deg, #002147 0%, #004e89 100%);
+
+    --accent-color: #ffcc00;
+    --accent-gradient: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+
+    /* Backgrounds */
+    --bg-main: #f4f7fa;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --bg-glass: rgba(255, 255, 255, 0.95);
+
+    /* Text */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    /* Borders & Shadows */
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 33, 71, 0.12);
+    --shadow-lg: 0 10px 30px rgba(0, 33, 71, 0.15);
+    --shadow-glow: 0 0 25px rgba(0, 33, 71, 0.2);
+
+    /* Spacing & Radius */
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-full: 9999px;
+
+    /* Typography */
+    --font-family: 'Inter', -apple-system, sans-serif;
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+}
+
+/* Base Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* ===================================
+   BRAND HEADER ("Barra Amarilla")
+   =================================== */
+.brand-header {
+    background: var(--acertemos-blue);
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 5px solid var(--acertemos-gold);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 100;
+}
+
+.brand-logo {
+    max-width: 100%;
+    width: 180px;
+    height: auto;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+    animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================================
+   INTERACTIVE CARDS
+   =================================== */
+.featured-card {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.featured-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--acertemos-gold);
+}
+
+.featured-card:hover {
+    border-color: var(--acertemos-gold);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 33, 71, 0.2);
+}
+
+.featured-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--acertemos-blue);
+    border-radius: var(--radius-md);
+    font-size: 2.5rem;
+    color: var(--acertemos-gold);
+    box-shadow: var(--shadow-md);
+}
+
+.featured-action {
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: var(--acertemos-gold);
+    color: var(--acertemos-blue);
+    border-radius: var(--radius-full);
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 10px rgba(255, 204, 0, 0.3);
+}
+
+.featured-action:hover {
+    background: var(--acertemos-gold-dark);
+    transform: scale(1.05);
+}
+
+/* ===================================
+   CONVERSATIONAL CHAT INTERFACE
+   =================================== */
+.chat-app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 800px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.message {
+    display: flex;
+    gap: var(--spacing-sm);
+    max-width: 85%;
+    animation: messageSlideIn 0.4s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.bot {
+    align-self: flex-start;
+}
+
+.message.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.message-bubble {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.message.bot .message-bubble {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 4px;
+}
+
+.message.user .message-bubble {
+    background: var(--primary-gradient);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-input-area {
+    background: white;
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-lg);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite;
+}
+
+@keyframes typingBounce {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-6px);
+    }
+}
+/* Responsive */
+@media (max-width: 768px) {
+    .brand-header {
+        padding: 0.8rem;
+    }
+    .brand-logo {
+        width: 140px;
+    }
+}

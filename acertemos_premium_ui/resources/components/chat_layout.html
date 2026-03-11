@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Form - Acertemos UI</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="chat-app">
+        <!-- Messages -->
+        <main class="chat-messages">
+            <!-- Bot Message -->
+            <div class="message bot">
+                <div class="message-bubble">
+                    <div class="message-text">¡Hola! Para empezar, por favor indícanos tu nombre completo.</div>
+                </div>
+            </div>
+
+            <!-- User Message -->
+            <div class="message user">
+                <div class="message-bubble">
+                    <div class="message-text">Juan Pérez</div>
+                </div>
+            </div>
+
+            <!-- Bot Question -->
+            <div class="message bot">
+                <div class="message-bubble">
+                    <div class="message-text">¿Cómo calificarías tu nivel de satisfacción laboral hoy?</div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="message bot">
+                <div class="message-bubble">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="chat-input-area">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" placeholder="Escribe tu respuesta..."
+                    style="flex: 1; padding: 12px; border-radius: 25px; border: 1px solid var(--border-color); outline: none;">
+                <button
+                    style="background: var(--primary-gradient); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 600;">Enviar</button>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

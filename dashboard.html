@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sorteos - Acertemos</title>
+    <link rel="stylesheet" href="acertemos_premium_ui/resources/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            border-left: 5px solid var(--acertemos-gold);
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .sorteo-info-card {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: var(--primary-gradient);
+            border-left: none;
+            border-bottom: 5px solid var(--acertemos-gold);
+            color: white;
+        }
+
+        .sorteo-info-card .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        #detNombre {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white !important;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+        }
+
+        .sorteo-info-card .info-item .label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sorteo-info-card .info-item .value {
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .info-dates {
+            display: flex;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .info-item .value {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--acertemos-blue);
+            color: white;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        tr:hover {
+            background-color: var(--bg-main);
+        }
+
+        .btn-premium {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--radius-full);
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--acertemos-blue);
+            color: var(--acertemos-blue);
+        }
+
+        .btn-outline:hover {
+            background: var(--acertemos-blue);
+            color: white;
+        }
+
+        select,
+        input {
+            padding: 10px 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            outline: none;
+            font-family: inherit;
+        }
+
+        /* Modal Styles */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 450px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        .edit-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-main);
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .edit-badge:hover {
+            background: var(--acertemos-gold);
+            border-color: var(--acertemos-gold);
+        }
+
+        /* Receipts List Styles */
+        .receipt-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+
+        .receipt-item:hover {
+            background: var(--bg-main);
+        }
+
+        .receipt-img-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .receipt-info {
+            flex: 1;
+        }
+
+        .receipt-id {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .receipt-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-page {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--primary-color);
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-page:hover:not(:disabled) {
+            background: var(--acertemos-blue);
+            color: white;
+        }
+
+        .btn-page:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #pageIndicator {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="brand-header">
+        <img src="assets/gane.png" alt="Gane" class="brand-logo">
+    </header>
+
+    <div class="dashboard-container">
+        <div class="controls-row">
+            <div>
+                <h1 style="color: var(--primary-color); line-height: 1;">Dashboard Sorteos</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Gestión de participantes y sorteos</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <label style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">Sorteo:</label>
+                <select id="sorteoFilter">
+                    <option value="">TODOS</option>
+                </select>
+                <input type="text" id="searchFilter" placeholder="Buscar nombre, cédula o tel..." oninput="debouncedFilter()">
+                <input type="text" id="ticketFilter" placeholder="Buscar # ticket..." oninput="debouncedFilter()">
+                <button class="btn-premium" onclick="openCreateModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Nuevo
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <!-- Info del Sorteo Seleccionado (Ahora Arriba) -->
+            <div class="stat-card sorteo-info-card" id="sorteoDetailCard" style="display: none;">
+                <div class="edit-badge" style="background: white; color: var(--acertemos-blue); border: none;"
+                    onclick="openEditModal()">EDITAR FECHAS</div>
+                <div class="stat-label" id="detNombre">NOMBRE DEL SORTEO</div>
+                <div class="info-dates">
+                    <div class="info-item">
+                        <span class="label">Fecha Inicio</span>
+                        <span class="value" id="detInicio">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Fecha Fin</span>
+                        <span class="value" id="detFin">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Estado</span>
+                        <span class="value" id="detEstado">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contadores (Ahora Abajo) -->
+            <div class="stat-card">
+                <div class="stat-label">Usuarios Únicos</div>
+                <div class="stat-value" id="totalUsers">0</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted)">En la base general</div>
+            </div>
+
+            <div class="stat-card" style="border-left-color: var(--acertemos-blue)">
+                <div class="stat-label">Participaciones</div>
+                <div class="stat-value" id="totalRegistros">0</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted)" id="regContext">Total acumulado</div>
+            </div>
+        </div>
+
+        <div class="data-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre Completo</th>
+                        <th>Teléfono</th>
+                        <th style="text-align: center;"># Participaciones</th>
+                        <th>Recibo</th>
+                        <th>Último Registro</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+            <div class="pagination">
+                <button id="prevPage" class="btn-page" onclick="changePage(-1)">Anterior</button>
+                <span id="pageIndicator">Página 1 de 1</span>
+                <button id="nextPage" class="btn-page" onclick="changePage(1)">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Recibos -->
+    <div id="receiptsModal" class="modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--primary-color); margin: 0;">Recibos del Usuario</h2>
+                <button onclick="closeReceiptsModal()"
+                    style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted)">&times;</button>
+            </div>
+            <div id="receiptsList">
+                <!-- Receipts will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo/Editar Sorteo -->
+    <div id="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="margin-bottom: 25px; color: var(--primary-color)">Nuevo Sorteo</h2>
+            <form id="sorteoForm">
+                <input type="hidden" id="sId">
+                <div class="form-group">
+                    <label>Nombre del Sorteo</label>
+                    <input type="text" id="sNombre" required placeholder="Ej. Baloto de Pascua">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Inicio</label>
+                    <input type="date" id="sInicio" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Fin</label>
+                    <input type="date" id="sFin" required>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 30px;">
+                    <button type="button" class="btn-premium btn-outline" style="flex: 1"
+                        onclick="closeModal()">Cancelar</button>
+                    <button type="submit" id="submitBtn" class="btn-premium" style="flex: 1.5">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Auto-detect API root based on the current location
+        const API_URL = window.location.pathname.includes('/registro_sorteos/')
+            ? "/registro_sorteos/"
+            : "";
+        let allSorteos = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // ── Saman Auth Guard ──────────────────────────────────────────────────
+        // Allowed emails for production. Localhost is always bypassed.
+        const ALLOWED_EMAILS = [
+            "communitymanager@acertemos.com",
+            "iderdecomunicaciones@certemos.com",
+            "ingenieroia@acertemos.com"
+        ];
+
+        (function checkSamanAuth() {
+            const host = window.location.hostname;
+            // Bypass on localhost/dev
+            if (host === 'localhost' || host === '127.0.0.1') return;
+
+            try {
+                const identityStr = localStorage.getItem('identity');
+                if (!identityStr) throw new Error('No identity');
+
+                const identity = JSON.parse(identityStr);
+                if (!identity?.token) throw new Error('No token');
+
+                // Saman identity structure is complex — checking all common locations
+                const rawEmail = (identity.usuario && identity.usuario.notificaciones && identity.usuario.notificaciones.data) ||
+                    identity.correo ||
+                    identity.data ||
+                    (identity.usuario && identity.usuario.email) ||
+                    '';
+
+                const email = rawEmail.toLowerCase().trim();
+                const allowed = ALLOWED_EMAILS.map(e => e.toLowerCase());
+
+                if (!allowed.includes(email)) {
+                    console.error("Acceso denegado para:", email);
+                    throw new Error('Not authorized: ' + email);
+                }
+
+            } catch (e) {
+                console.warn("Saman Auth Guard - Redirigiendo:", e.message);
+                window.location.href = 'https://saman.lafortuna.com.co';
+            }
+        })();
+        // ─────────────────────────────────────────────────────────────────────
+
+        async function loadSorteos() {
+            const res = await fetch(`${API_URL}sorteos?active_only=false`);
+            allSorteos = await res.json();
+            const filter = document.getElementById('sorteoFilter');
+
+            // Clear current options except "TODOS"
+            while (filter.options.length > 1) filter.remove(1);
+
+            allSorteos.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.nombre_sorteo;
+                filter.appendChild(opt);
+            });
+        }
+
+        async function loadDashboard() {
+            const sorteoId = document.getElementById('sorteoFilter').value;
+
+            // 1. Load Stats
+            const statsRes = await fetch(`${API_URL}dashboard/stats` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''));
+            const stats = await statsRes.json();
+            document.getElementById('totalUsers').textContent = stats.total_usuarios;
+            document.getElementById('totalRegistros').textContent = stats.total_registros;
+            document.getElementById('regContext').textContent = sorteoId ? "Para este sorteo" : "Total acumulado";
+
+            // 2. Load Table
+            const search = document.getElementById('searchFilter').value;
+            const ticket = document.getElementById('ticketFilter').value;
+            let query = `${API_URL}dashboard/users?sorteo_id=${sorteoId || ""}&page=${currentPage}&page_size=20`;
+            if (search) query += `&search=${encodeURIComponent(search)}`;
+            if (ticket) query += `&ticket_number=${encodeURIComponent(ticket)}`;
+
+            const usersRes = await fetch(query);
+            const data = await usersRes.json();
+            const users = data.items;
+            totalPages = data.pages;
+            currentPage = data.current_page;
+
+            // Update Pagination UI
+            document.getElementById('pageIndicator').textContent = `Página ${currentPage} de ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage <= 1;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages;
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const lastDate = u.fecha_ultimo_registro ? new Date(u.fecha_ultimo_registro).toLocaleString() : 'N/A';
+
+                const receiptHtml = u.count_receipts > 0
+                    ? `<a href="javascript:void(0)" onclick="viewReceipts('${u.cedula}')" style="color: #004e89; text-decoration: none; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Ver Recibos (${u.count_receipts})
+                    </a>`
+                    : '<span style="color: #cbd5e1; font-size: 0.8rem">Sin Recibos</span>';
+
+                tr.innerHTML = `
+                    <td style="font-weight: 700; color: var(--acertemos-blue)">${u.cedula}</td>
+                    <td style="font-weight: 500">${u.nombre_completo}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.9rem">${u.telefono || '-'}</td>
+                    <td style="text-align: center;"><span style="background: var(--bg-main); padding: 5px 15px; border-radius: 20px; font-weight: 800; color: var(--primary-color)">${u.count_sorteos}</span></td>
+                    <td style="text-align: left;">${receiptHtml}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.9rem">${lastDate}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 3. Update Sorteo Detail Card
+            const detailCard = document.getElementById('sorteoDetailCard');
+            if (sorteoId) {
+                const s = allSorteos.find(x => x.id == sorteoId);
+                if (s) {
+                    detailCard.style.display = 'flex';
+                    document.getElementById('detNombre').textContent = s.nombre_sorteo;
+                    document.getElementById('detInicio').textContent = s.fecha_inicio;
+                    document.getElementById('detFin').textContent = s.fecha_fin;
+
+                    const now = new Date().toISOString().split('T')[0];
+                    const isAct = now >= s.fecha_inicio && now <= s.fecha_fin;
+                    document.getElementById('detEstado').innerHTML = isAct
+                        ? '<span style="color: #22c55e">● ACTIVO</span>'
+                        : '<span style="color: #64748b">● FINALIZADO</span>';
+                }
+            } else {
+                detailCard.style.display = 'none';
+            }
+        }
+
+        // Modals Logic
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = "Nuevo Sorteo";
+            document.getElementById('sorteoForm').reset();
+            document.getElementById('sId').value = "";
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function openEditModal() {
+            const sorteoId = document.getElementById('sorteoFilter').value;
+            const s = allSorteos.find(x => x.id == sorteoId);
+            if (!s) return;
+
+            document.getElementById('modalTitle').textContent = "Editar Sorteo";
+            document.getElementById('sId').value = s.id;
+            document.getElementById('sNombre').value = s.nombre_sorteo;
+            document.getElementById('sInicio').value = s.fecha_inicio;
+            document.getElementById('sFin').value = s.fecha_fin;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        async function viewReceipts(cedula) {
+            const sorteoId = document.getElementById('sorteoFilter').value;
+            const res = await fetch(`${API_URL}dashboard/user-receipts/${cedula}` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''));
+            const receipts = await res.json();
+
+            const list = document.getElementById('receiptsList');
+            list.innerHTML = '';
+
+            if (receipts.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No se encontraron recibos.</p>';
+            } else {
+                receipts.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'receipt-item';
+
+                    const date = new Date(r.fecha_creacion).toLocaleString();
+                    const imgHtml = r.comprobante_url
+                        ? `<img src="${r.comprobante_url}" class="receipt-img-thumb" onclick="window.open('${r.comprobante_url}', '_blank')" title="Click para ampliar">`
+                        : `<div style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #cbd5e1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></div>`;
+
+                    const btnHtml = r.comprobante_url
+                        ? `<a href="${r.comprobante_url}" target="_blank" class="btn-premium" style="padding: 5px 10px; font-size: 0.7rem;">ABRIR</a>`
+                        : `<span style="color: #cbd5e1; font-size: 0.7rem; font-weight: 600;">SIN FOTO</span>`;
+
+                    item.innerHTML = `
+                        ${imgHtml}
+                        <div class="receipt-info">
+                            <div class="receipt-id">#${r.numero_registro} - ${r.nombre_sorteo}</div>
+                            <div class="receipt-date">${date}</div>
+                        </div>
+                        ${btnHtml}
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            document.getElementById('receiptsModal').style.display = 'flex';
+        }
+
+        function closeReceiptsModal() {
+            document.getElementById('receiptsModal').style.display = 'none';
+        }
+
+        document.getElementById('sorteoForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const sId = document.getElementById('sId').value;
+            const data = {
+                nombre_sorteo: document.getElementById('sNombre').value,
+                fecha_inicio: document.getElementById('sInicio').value,
+                fecha_fin: document.getElementById('sFin').value,
+                activo: true
+            };
+
+            const url = sId ? `${API_URL}/sorteos/${sId}` : `${API_URL}/sorteos`;
+            const method = sId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                closeModal();
+                await loadSorteos();
+                await loadDashboard();
+            } else {
+                alert("Error al guardar los cambios");
+            }
+        };
+
+        document.getElementById('sorteoFilter').onchange = () => { currentPage = 1; loadDashboard(); };
+
+        function changePage(delta) {
+            const nextP = currentPage + delta;
+            if (nextP > 0 && nextP <= totalPages) {
+                currentPage = nextP;
+                loadDashboard();
+            }
+        }
+
+        let filterTimeout;
+        function debouncedFilter() {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadDashboard();
+            }, 300);
+        }
+
+        window.onload = async () => {
+            await loadSorteos();
+            await loadDashboard();
+        };
+    </script>
+</body>
+
+</html>

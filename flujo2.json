@@ -1,0 +1,184 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "messages"
+                ],
+                "options": {}
+            },
+            "type": "n8n-nodes-base.whatsAppTrigger",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ],
+            "id": "trigger",
+            "name": "WhatsApp Trigger",
+            "webhookId": "whatsapp-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "const msg = $input.first().json.messages?.[0];\nreturn [{\n  json: {\n    from: msg?.from || '',\n    text: msg?.text?.body || msg?.image?.caption || '',\n    mediaId: msg?.image?.id || null,\n    isImage: !!msg?.image,\n    phoneNumberId: $input.first().json.metadata?.phone_number_id\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                620,
+                300
+            ],
+            "id": "parse",
+            "name": "Parsear Datos"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-img",
+                            "leftValue": "={{ $json.isImage }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                840,
+                300
+            ],
+            "id": "is-image",
+            "name": "¿Es Imagen?"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://saman.lafortuna.com.co/registro_sorteos/whatsapp/interact",
+                "sendBody": true,
+                "contentType": "application/json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "telefono",
+                            "value": "={{ $('Parsear Datos').item.json.from }}"
+                        },
+                        {
+                            "name": "texto",
+                            "value": "={{ $('Parsear Datos').item.json.text }}"
+                        },
+                        {
+                            "name": "media_url",
+                            "value": "={{ $json.url }}"
+                        },
+                        {
+                            "name": "media_type",
+                            "value": "image"
+                        },
+                        {
+                            "name": "extracted_cedula",
+                            "value": "={{ $node[\"IA_Extraccion\"].json[\"cedula\"] }}"
+                        },
+                        {
+                            "name": "extracted_nombre",
+                            "value": "={{ $node[\"IA_Extraccion\"].json[\"nombre\"] }}"
+                        },
+                        {
+                            "name": "extracted_ticket",
+                            "value": "={{ $node[\"IA_Extraccion\"].json[\"ticket\"] }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1400,
+                300
+            ],
+            "id": "interact",
+            "name": "Orquestador Backend"
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "={{ $('Parsear Datos').item.json.phoneNumberId }}",
+                "recipientPhoneNumber": "={{ $('Parsear Datos').item.json.from }}",
+                "textBody": "={{ $json.mensaje }}",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                1650,
+                300
+            ],
+            "id": "send",
+            "name": "Enviar Respuesta"
+        }
+    ],
+    "connections": {
+        "WhatsApp Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Parsear Datos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parsear Datos": {
+            "main": [
+                [
+                    {
+                        "node": "¿Es Imagen?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "¿Es Imagen?": {
+            "main": [
+                [
+                    {
+                        "node": "TRABAJO_CON_IMAGEN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Orquestador Backend",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Orquestador Backend": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Respuesta",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

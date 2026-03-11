@@ -1,0 +1,37 @@
+# Entornos virtuales Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Variables de entorno (contienen credenciales)
+.env
+
+# 🔑 Credenciales sensibles - NUNCA subir a Git
+backend/key_drive.json
+backend/token.json
+backend/oauth_credentials.json
+*.json.key
+service_account*.json
+
+# Base de datos local
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
