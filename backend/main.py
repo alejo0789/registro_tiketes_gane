@@ -504,12 +504,6 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     # --- Detectar tipo de documento que llegó en esta interacción ---
     tipo_doc = (data.tipo_documento_detectado or "").lower().strip()
 
-    if tipo_doc == "invalido":
-        return {
-            "mensaje": "⚠️ El documento enviado no parece ser una *cédula válida* o un *ticket aceptado* (Betplay/Chance).\n\nPor favor, intenta enviar una foto más clara y asegúrate de que sea un formato permitido.",
-            "paso_siguiente": session.paso
-        }
-
     # --- SALUDOS ---
     palabras_saludo = ["hola", "buen", "saludos", "hi", "menu", "inicio", "reinicio"]
     es_saludo = any(s in texto.lower() for s in palabras_saludo) and not tipo_doc
@@ -530,6 +524,12 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         else:
             session.paso = "CEDULA"
         db.commit()
+
+    if tipo_doc == "invalido":
+        return {
+            "mensaje": "⚠️ El documento enviado no parece ser una *cédula válida* o un *ticket aceptado* (Betplay/Chance).\n\nPor favor, intenta enviar una foto más clara y asegúrate de que sea un formato permitido.",
+            "paso_siguiente": session.paso
+        }
 
     # Si es saludo, reiniciar al paso correcto
     if es_saludo:
