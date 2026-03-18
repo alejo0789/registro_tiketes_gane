@@ -517,12 +517,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     if not session:
         session = models.WhatsAppSession(telefono=telefono)
         db.add(session)
+        session.paso = "MENU"
         if user:
             session.cedula = user.cedula
             session.nombre_completo = user.nombre_completo
-            session.paso = "TICKET"
-        else:
-            session.paso = "CEDULA"
         db.commit()
 
     if tipo_doc == "invalido":
@@ -531,46 +529,99 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             "paso_siguiente": session.paso
         }
 
-    # Si es saludo, reiniciar al paso correcto
-    if es_saludo:
-        if user:
-            session.paso = "TICKET"
-            db.commit()
-            return {
-                "mensaje": f"¡Hola de nuevo, *{user.nombre_completo.split()[0]}*! 👋\n\n"
-                           f"Envíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
-                "paso_siguiente": "TICKET"
-            }
-        else:
-            session.paso = "CEDULA"
-            db.commit()
-            return {
-                "mensaje": "¡Hola! 👋 Estás participando por la *moto eléctrica* 🏙️.\n\n"
-                           "Para comenzar, envíame una *foto clara de tu cédula* 📸.\n\n"
-                           "_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
-                "paso_siguiente": "CEDULA"
-            }
+    # Si es saludo o paso INICIO, reiniciar al menú principal
+    if es_saludo or session.paso == "INICIO":
+        session.paso = "MENU"
+        db.commit()
+        nombre_str = f" Hola, *{user.nombre_completo.split()[0]}*" if user and user.nombre_completo else " ¡Hola!"
+        return {
+            "mensaje": f"🎰{nombre_str}! Bienvenido a Acertemos.\n\n¿Qué deseas hacer hoy?\n\n1️⃣ Participar con un ticket nuevo 🎟️\n2️⃣ Consultar ticket ganador 🏆\n\nResponde con el número de tu opción (1 o 2).",
+            "paso_siguiente": "MENU"
+        }
 
     # =========================================================
     # 4. MÁQUINA DE ESTADOS
     # =========================================================
 
-    # --- PASO: INICIO ---
-    if session.paso == "INICIO":
-        if user:
-            session.paso = "TICKET"
+    # --- PASO: MENU ---
+    if session.paso == "MENU":
+        opcion = texto.strip()
+        if opcion == "1":
+            if user:
+                session.paso = "TICKET"
+                db.commit()
+                return {
+                    "mensaje": "¡Perfecto! Envíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
+                    "paso_siguiente": "TICKET"
+                }
+            else:
+                session.paso = "CEDULA"
+                db.commit()
+                return {
+                    "mensaje": "¡Perfecto! Estás participando por la *moto eléctrica* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
+                    "paso_siguiente": "CEDULA"
+                }
+        elif opcion == "2":
+            session.paso = "CONSULTA_TICKET"
             db.commit()
             return {
-                "mensaje": f"¡Hola, *{user.nombre_completo.split()[0]}*! 👋 Envíame la *foto de tu ticket*.",
-                "paso_siguiente": "TICKET"
+                "mensaje": "🏆 Has elegido *Consultar Ticket*.\n\nPor favor, *envíame la foto del ticket* que deseas verificar, o escribe el número de serie.",
+                "paso_siguiente": "CONSULTA_TICKET"
             }
         else:
-            session.paso = "CEDULA"
-            db.commit()
             return {
-                "mensaje": "¡Hola! 👋 Por favor envíame la *foto de tu cédula* para comenzar.",
-                "paso_siguiente": "CEDULA"
+                "mensaje": "⚠️ Opción no válida.\n\nPor favor responde *1* para registrar un ticket nuevo o *2* para consultar un ticket ganador.",
+                "paso_siguiente": "MENU"
             }
+
+    # --- PASO: CONSULTA TICKET ---
+    if session.paso == "CONSULTA_TICKET":
+        import urllib.request
+        import json
+        
+        id_tra = None
+        if tipo_doc in ["betplay", "chance"] and data.extracted_id_tra:
+            id_tra = clean_num(data.extracted_id_tra)
+        elif not tipo_doc and texto: # Si digita el numero manualmente
+            val = texto.replace("-", "").replace(".", "").replace(" ", "").replace("#", "").strip()
+            if val.isdigit() and len(val) >= 4:
+                id_tra = val
+                
+        if not id_tra:
+            return {
+                "mensaje": "⚠️ No pudimos detectar el número de serie. Por favor envía una foto clara del ticket o escribe el número manualmente.",
+                "paso_siguiente": "CONSULTA_TICKET"
+            }
+
+        url_validador = f"https://script.google.com/macros/s/AKfycby6XEiNdZZUXxt9_sxZhO7-tkluNY8KG1WMmAx2LZEbvp6Ij9md38jRFSihms5ltUwx/exec?serie={id_tra}"
+        try:
+            req = urllib.request.Request(url_validador)
+            with urllib.request.urlopen(req, timeout=15) as response:
+                result = json.loads(response.read().decode())
+                
+            if result.get("valido") == True:
+                msg_validador = result.get("mensaje", "")
+                if "GANASTE" in msg_validador.upper():
+                    mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* es un ganador. 🏆\n\n{msg_validador}"
+                else:
+                    mensaje_final = f"Tu ticket *{id_tra}* es válido.\n\n{msg_validador}"
+            else:
+                msg_validador = result.get("mensaje", "Contacte a su proveedor.")
+                mensaje_final = f"⚠️ *{id_tra}* no es válido.\n\n{msg_validador}"
+                
+        except Exception as e:
+            mensaje_final = "Hubo un error verificando el ticket en nuestro sistema (el servidor de consulta está ocupado). Por favor intenta más tarde."
+        
+        # Volvemos al menu independientemente del resultado
+        session.paso = "MENU"
+        db.commit()
+        
+        mensaje_final += "\n\n💡 _Volviendo al menú principal..._\nSi deseas hacer algo más, dime *Hola* o digita:\n1️⃣ Participar con ticket nuevo\n2️⃣ Consultar otro ticket"
+        
+        return {
+            "mensaje": mensaje_final,
+            "paso_siguiente": "MENU"
+        }
 
     # --- PASO: CEDULA ---
     if session.paso == "CEDULA":
