@@ -535,7 +535,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         db.commit()
         nombre_str = f" Hola, *{user.nombre_completo.split()[0]}*" if user and user.nombre_completo else " ¡Hola!"
         return {
-            "mensaje": f"🎰{nombre_str}! Bienvenido a Acertemos.\n\n¿Qué deseas hacer hoy?\n\n1️⃣ Participar con un ticket nuevo 🎟️\n2️⃣ Consultar ticket ganador 🏆\n\nResponde con el número de tu opción (1 o 2).",
+            "mensaje": f"🎰{nombre_str}! Bienvenido a Gane.\n\n¿Qué deseas hacer hoy?\n\n1️⃣ Registrar un nuevo ticket 🎟️\n2️⃣ Consultar ticket ganador 🏆\n\nResponde con el número de tu opción (1 o 2).",
             "paso_siguiente": "MENU"
         }
 
@@ -616,7 +616,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         session.paso = "MENU"
         db.commit()
         
-        mensaje_final += "\n\n💡 _Volviendo al menú principal..._\nSi deseas hacer algo más, dime *Hola* o digita:\n1️⃣ Participar con ticket nuevo\n2️⃣ Consultar otro ticket"
+        mensaje_final += "\n\n💡 _Volviendo al menú principal..._\nSi deseas hacer algo más, dime *Hola* o digita:\n1️⃣ Registrar un nuevo ticket\n2️⃣ Consultar otro ticket"
         
         return {
             "mensaje": mensaje_final,
