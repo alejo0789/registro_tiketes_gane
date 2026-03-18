@@ -319,7 +319,7 @@
         }
 
         .price {
-            font-size: 4rem;
+            font-size: 3rem;
             font-weight: bold;
             margin: 20px 0;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -368,53 +368,129 @@
 
         @media print {
             body {
-                background-color: white !important;
+                background-color: var(--bg-color) !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                text-align: left !important;
             }
 
             .brand-header {
                 position: static !important;
-                box-shadow: none !important;
+                background: linear-gradient(135deg, var(--owo-purple), var(--owo-purple-dark)) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 15px !important;
+            }
+
+            .brand-header img {
+                max-height: 60px !important;
+                margin-bottom: 5px !important;
             }
 
             .container {
                 max-width: 100%;
-                margin: 0 auto;
+                margin: 10px auto !important;
+                padding: 0 40px;
+            }
+
+            .intro h2, .intro p {
+                text-align: center !important;
+            }
+
+            .intro {
+                margin-bottom: 20px !important;
+                text-align: center !important;
             }
 
             .chat-section-title {
-                page-break-before: always;
-                break-before: always;
-                page-break-after: avoid;
-                break-after: avoid;
+                margin: 10px 0 !important;
+                page-break-after: avoid !important;
+                text-align: left !important;
             }
 
-            .featured-card,
-            .flow-step,
-            .price-card {
-                page-break-inside: avoid;
-                break-inside: avoid;
-                box-shadow: none !important;
-                border: 1px solid #e2e8f0;
-            }
-
-            .price-card {
-                background: var(--owo-purple) !important;
-                color: white !important;
-            }
-
-            .price-card h2,
-            .price-card .price {
-                color: white !important;
-            }
-
-            .flow-step::before {
-                display: none !important;
+            .flow-container {
+                gap: 20px !important;
             }
 
             .flow-step {
-                border-left: 8px solid var(--owo-purple-light) !important;
+                display: flex !important;
+                flex-direction: row !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                padding: 20px !important;
+                margin-bottom: 10px !important;
+                background-color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                align-items: flex-start !important;
+                position: relative !important;
+            }
+
+            .flow-step[style*="flex-direction: row-reverse"] {
+                flex-direction: row-reverse !important;
+            }
+
+            .step-number {
+                width: 35px !important;
+                height: 35px !important;
+                font-size: 1.2rem !important;
+                margin-right: 15px !important;
+                flex-shrink: 0 !important;
+                align-self: flex-start !important;
+                margin-top: 0 !important;
+            }
+
+            .step-content {
+                flex: 1 !important;
+                text-align: left !important;
+            }
+
+            .step-content h3 {
+                font-size: 1.3rem !important;
+                margin-bottom: 5px !important;
+                text-align: left !important;
+            }
+
+            .step-content p {
+                font-size: 1rem !important;
+                text-align: left !important;
+            }
+
+            .screenshot-wrapper {
+                flex: 0.8 !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+            }
+
+            .flow-step[style*="flex-direction: row-reverse"] .screenshot-wrapper {
+                justify-content: flex-start !important;
+            }
+
+            .screenshot-img {
+                max-height: 220px !important;
+            }
+
+            .price-card {
+                background: linear-gradient(135deg, var(--owo-purple-dark), var(--owo-purple)) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color: white !important;
+                page-break-inside: avoid !important;
+                margin-top: 20px !important;
+                padding: 30px !important;
+                text-align: left !important;
+            }
+
+            .price-card h2, .price-card p, .price-card .price {
+                text-align: left !important;
+            }
+
+            .price {
+                font-size: 3rem !important;
+            }
+
+            .cta-button {
+                display: none;
             }
         }
     </style>
@@ -433,73 +509,8 @@
         <div class="intro">
             <h2>Sistema Automatizado de Sorteos por WhatsApp</h2>
             <p>Una solución integral e inteligente que automatiza la recepción, validación y registro de tickets de
-                sorteo a través de inteligencia artificial instalada directamente en WhatsApp, brindando una experiencia
-                Premium para el usuario y control total para la administración.</p>
-        </div>
-
-        <div class="featured-card">
-            <div class="featured-icon">🎯</div>
-            <div class="featured-content">
-                <h2 class="featured-title">1. Gestión Integral de Sorteos</h2>
-                <div class="featured-description">
-                    Capacidad completa para registrar y administrar diferentes tipos de sorteos desde un panel
-                    unificado.
-                    <ul>
-                        <li><strong>Activación por períodos:</strong> Define fechas de inicio y fin para cada sorteo
-                            automáticamente.</li>
-                        <li><strong>Múltiples mecánicas:</strong> Soporta distintas dinámicas promocionales simultáneas.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="featured-card">
-            <div class="featured-icon">🤖</div>
-            <div class="featured-content">
-                <h2 class="featured-title">2. Chatbot Inteligente en WhatsApp</h2>
-                <div class="featured-description">
-                    Atención 24/7 sin intervención manual, con flujos de conversación naturales y memoria contextual.
-                    <ul>
-                        <li><strong>Registro sin fricción:</strong> Solo se pide la foto de la cédula o el número en la
-                            primera interacción. El teléfono se obtiene automáticamente. El sistema <em>recuerda</em> al
-                            usuario en futuros registros.</li>
-                        <li><strong>Recepción ágil:</strong> El usuario solo envía la foto o texto de su ticket.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="featured-card">
-            <div class="featured-icon">🧠</div>
-            <div class="featured-content">
-                <h2 class="featured-title">3. IA y Extracción de Datos (OCR)</h2>
-                <div class="featured-description">
-                    No más digitación manual. El sistema lee y valida los tickets enviados por los usuarios.
-                    <ul>
-                        <li><strong>Lectura de diferentes tickets:</strong> Reconoce el consecutivo y valores
-                            depositados en distintos formatos de tirillas.</li>
-                        <li><strong>Validación de valores:</strong> Verifica que el monto del ticket cumpla con el
-                            mínimo exigido por el sorteo.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="featured-card">
-            <div class="featured-icon">🛡️</div>
-            <div class="featured-content">
-                <h2 class="featured-title">4. Seguridad y Antifraude (Tiempo Real)</h2>
-                <div class="featured-description">
-                    Protege el sorteo contra trampas e intentos de registro múltiple.
-                    <ul>
-                        <li><strong>Bloqueo de duplicados:</strong> Si un ticket ya fue registrado, se rechaza
-                            automáticamente notificando al usuario.</li>
-                        <li><strong>Trazabilidad:</strong> Todo ticket queda atado a la cédula validada y marca de
-                            tiempo exacta.</li>
-                    </ul>
-                </div>
-            </div>
+                sorteo a través de WhatsApp, brindando una mejor experiencia
+                para el usuario y control total para la administración.</p>
         </div>
 
         <h2 class="chat-section-title">Flujo de Experiencia del Usuario (WhatsApp)</h2>
@@ -520,9 +531,9 @@
             <div class="flow-step" style="flex-direction: row-reverse;">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h3>Recepción de Tickets</h3>
-                    <p>El usuario simplemente envía la imagen de su ticket a través del chat, como si estuviera hablando
-                        con un asesor humano. El sistema procesa la imagen de forma rápida e intuitiva.</p>
+                    <h3>Identificación y Extracción</h3>
+                    <p>Al recibir la imagen, el sistema identifica si el ticket es Betplay o Chance y extrae
+                        automáticamente los datos clave (ID, valor, identificación) para su procesamiento.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/tiket.jpg" alt="Envío Ticket" class="screenshot-img">
@@ -532,9 +543,9 @@
             <div class="flow-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <h3>Validación Instantánea por IA</h3>
-                    <p>La IA extrae los datos (valor, número de ticket) y valida si cumple con las condiciones y si no
-                        es un ticket duplicado. Al finalizar, el usuario recibe su confirmación al instante.</p>
+                    <h3>Identificación Automatizada</h3>
+                    <p>El sistema cruza la información extraída con la base de datos para validar si el ticket ya está
+                        registrado y confirma si cumple con las condiciones para participar.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/validacion.jpg" alt="Validación IA" class="screenshot-img">
@@ -545,7 +556,9 @@
                 <div class="step-number">4</div>
                 <div class="step-content">
                     <h3>Control Detallado de Registros</h3>
-                    <p>Visualiza el detalle completo de cada participación con el ID de transacción, identificación del apostador y el valor total del ticket, con la posibilidad de implementar filtrado por tipo de ticket o por valor.</p>
+                    <p>Visualiza el detalle completo de cada participación con el ID de transacción, identificación del
+                        apostador y el valor total del ticket, con la posibilidad de implementar filtrado por tipo de
+                        ticket o por valor.</p>
                 </div>
                 <div class="screenshot-wrapper">
                     <img src="screenshots/dashboard 2.jpg" alt="Detalle de Tickets" class="screenshot-img">
@@ -568,16 +581,14 @@
 
         <div class="price-card">
             <h2>Propuesta de Inversión</h2>
-            <p class="investment-details">Desarrollo a la medida de la plataforma integral (Backend, IA OCR, Conexión
-                WhatsApp, Base de Datos y Panel de Administración)</p>
-            <div class="price">$3,000 <span>USD</span></div>
+            <div class="price">$9.000.000</div>
             <p><strong>Único Pago</strong></p>
             <p style="font-size: 1.1rem; margin-top: 10px; opacity: 0.9;">Incluye alojamiento de la información por 1
                 año y soporte técnico por 3 meses.</p>
         </div>
 
         <div class="footer">
-            <p>&copy; 2026 - Propuesta Comercial Confidencial</p>
+            <p>&copy; oWo - Propuesta Comercial Confidencial</p>
         </div>
 
     </div>
