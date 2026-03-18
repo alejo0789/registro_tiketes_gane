@@ -62,3 +62,10 @@ class WhatsAppSession(Base):
     valor_pendiente = Column(String(50), nullable=True)  # valor del ticket en proceso
     comprobante_url = Column(String(500), nullable=True)
     ultima_interaccion = Column(DateTime, default=get_colombia_time, onupdate=get_colombia_time)
+
+class AdminUser(Base):
+    __tablename__ = "marketing_admin_users"
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String(50), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Dashboard Sorteos</title>
+    <link rel="stylesheet" href="acertemos_premium_ui/resources/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .brand-logo {
+            max-width: 150px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-weight: 800;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            border-color: var(--acertemos-blue);
+        }
+        .btn-premium {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--radius-full);
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            display: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <img src="assets/gane.png" alt="Gane" class="brand-logo">
+        <h2>Panel de Administración</h2>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="username" placeholder="Ingrese su usuario" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" placeholder="Ingrese su contraseña" required>
+            </div>
+            <button type="submit" class="btn-premium">Iniciar Sesión</button>
+            <div class="error-message" id="errorMsg">Usuario o contraseña incorrectos.</div>
+        </form>
+    </div>
+
+    <script>
+        // Check if already logged in
+        if(localStorage.getItem('auth_token_acertemos') === 'valid_admin_token_acertemos') {
+            window.location.href = 'dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            errorMsg.style.display = 'none';
+
+            try {
+                // Determine API root
+                const API_URL = window.location.pathname.includes('/registro_sorteos/') ? "/registro_sorteos/" : "/";
+                
+                const response = await fetch(API_URL + 'api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('auth_token_acertemos', data.access_token);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = "Error de conexión con el servidor.";
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

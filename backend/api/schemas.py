@@ -173,3 +173,12 @@ class ReceiptItem(BaseModel):
     comprobante_url: Optional[str]
     fecha_creacion: datetime
     nombre_sorteo: str
+
+# Auth / Login Schemas
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

@@ -68,6 +68,28 @@ try:
 except Exception as e:
     print(f"[Migration] Skipped or error: {e}")
 
+def init_admin():
+    from backend.db.session import SessionLocal
+    import hashlib
+    db = SessionLocal()
+    try:
+        hashed_pw = hashlib.sha256("admin123*".encode()).hexdigest()
+        admin = db.query(models.AdminUser).filter(models.AdminUser.username == "admin").first()
+        if not admin:
+            new_admin = models.AdminUser(username="admin", password_hash=hashed_pw)
+            db.add(new_admin)
+            db.commit()
+            print("[Init Admin] Usuario administrador creado exitosamente.")
+    except Exception as e:
+        print(f"[Init Admin] Error: {e}")
+    finally:
+        db.close()
+
+try:
+    init_admin()
+except Exception as e:
+    print(f"[Init Admin] Skipped or error: {e}")
+
 app = FastAPI(title="Acertemos Sorteos API")
 
 # Ensure assets directory exists and mount it
@@ -91,6 +113,25 @@ def read_dashboard():
 @app.get("/terminos.html")
 def read_terminos():
     return FileResponse("terminos.html")
+
+@app.get("/login")
+@app.get("/login.html")
+def read_login():
+    return FileResponse("login.html")
+
+@app.post("/api/login", response_model=schemas.Token)
+def login_admin(data: schemas.AdminLogin, db: Session = Depends(get_db)):
+    import hashlib
+    hashed_pw = hashlib.sha256(data.password.encode()).hexdigest()
+    admin = db.query(models.AdminUser).filter(
+        models.AdminUser.username == data.username,
+        models.AdminUser.password_hash == hashed_pw
+    ).first()
+    
+    if not admin:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
+        
+    return {"access_token": "valid_admin_token_acertemos", "token_type": "bearer"}
 
 # Enable CORS for frontend interaction
 app.add_middleware(

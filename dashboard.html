@@ -448,6 +448,9 @@
                 </select>
                 <input type="text" id="searchFilter" placeholder="Buscar nombre, cédula o tel..." oninput="debouncedFilter()">
                 <input type="text" id="ticketFilter" placeholder="Buscar # ticket..." oninput="debouncedFilter()">
+                <button class="btn-premium btn-outline" onclick="logout()" style="padding: 5px 15px; font-size: 0.85rem;">
+                    Cerrar Sesión
+                </button>
                 <button class="btn-premium" onclick="openCreateModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -573,10 +576,23 @@
         let currentPage = 1;
         let totalPages = 1;
 
+        // ── Auth Guard ──────────────────────────────────────────────────
+        (function checkAuth() {
+            const host = window.location.hostname;
+            // Opcional: Bypass on localhost 
+            // if (host === 'localhost' || host === '127.0.0.1') return;
 
+            const token = localStorage.getItem('auth_token_acertemos');
+            if (token !== 'valid_admin_token_acertemos') {
+                window.location.href = 'login.html';
+            }
+        })();
 
-        // Auth guard removed as per user request
-
+        function logout() {
+            localStorage.removeItem('auth_token_acertemos');
+            window.location.href = 'login.html';
+        }
+        // ─────────────────────────────────────────────────────────────────────
         // ─────────────────────────────────────────────────────────────────────
 
         async function loadSorteos() {
