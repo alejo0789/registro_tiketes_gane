@@ -573,46 +573,10 @@
         let currentPage = 1;
         let totalPages = 1;
 
-        // ── Saman Auth Guard ──────────────────────────────────────────────────
-        // Allowed emails for production. Localhost is always bypassed.
-        const ALLOWED_EMAILS = [
-            "communitymanager@acertemos.com",
-            "iderdecomunicaciones@certemos.com",
-            "ingenieroia@acertemos.com"
-        ];
 
-        (function checkSamanAuth() {
-            const host = window.location.hostname;
-            // Bypass on localhost/dev
-            if (host === 'localhost' || host === '127.0.0.1') return;
 
-            try {
-                const identityStr = localStorage.getItem('identity');
-                if (!identityStr) throw new Error('No identity');
+        // Auth guard removed as per user request
 
-                const identity = JSON.parse(identityStr);
-                if (!identity?.token) throw new Error('No token');
-
-                // Saman identity structure is complex — checking all common locations
-                const rawEmail = (identity.usuario && identity.usuario.notificaciones && identity.usuario.notificaciones.data) ||
-                    identity.correo ||
-                    identity.data ||
-                    (identity.usuario && identity.usuario.email) ||
-                    '';
-
-                const email = rawEmail.toLowerCase().trim();
-                const allowed = ALLOWED_EMAILS.map(e => e.toLowerCase());
-
-                if (!allowed.includes(email)) {
-                    console.error("Acceso denegado para:", email);
-                    throw new Error('Not authorized: ' + email);
-                }
-
-            } catch (e) {
-                console.warn("Saman Auth Guard - Redirigiendo:", e.message);
-                window.location.href = 'https://saman.lafortuna.com.co';
-            }
-        })();
         // ─────────────────────────────────────────────────────────────────────
 
         async function loadSorteos() {
