@@ -11,6 +11,7 @@ build/
 
 # Variables de entorno (contienen credenciales)
 .env
+doc_secret.txt
 
 # 🔑 Credenciales sensibles - NUNCA subir a Git
 backend/key_drive.json
