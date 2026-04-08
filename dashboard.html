@@ -944,6 +944,7 @@
             const res = await fetch(`${API_URL}sorteos?active_only=false`);
             allSorteos = await res.json();
             const filter = document.getElementById('sorteoFilter');
+            const currentValue = filter.value; // Guardar valor actual
 
             // Clear current options except "TODOS"
             while (filter.options.length > 1) filter.remove(1);
@@ -954,6 +955,11 @@
                 opt.textContent = s.nombre_sorteo;
                 filter.appendChild(opt);
             });
+
+            // Restaurar valor previo
+            if (currentValue) {
+                filter.value = currentValue;
+            }
         }
 
         async function loadDashboard() {
