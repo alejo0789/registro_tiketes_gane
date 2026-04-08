@@ -419,11 +419,16 @@ def update_sorteo(sorteo_id: int, sorteo_update: schemas.SorteoConfigUpdate, db:
 
 @app.get("/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(sorteo_id: Optional[int] = None, db: Session = Depends(get_db)):
-    user_count = db.query(func.count(models.User.cedula)).scalar()
-    
     reg_query = db.query(func.count(models.RegistroSorteo.id))
+    
     if sorteo_id:
+        user_count = db.query(func.count(func.distinct(models.RegistroSorteo.cedula))).filter(
+            models.RegistroSorteo.sorteo_id == sorteo_id
+        ).scalar()
         reg_query = reg_query.filter(models.RegistroSorteo.sorteo_id == sorteo_id)
+    else:
+        user_count = db.query(func.count(models.User.cedula)).scalar()
+        
     reg_count = reg_query.scalar()
     
     return {"total_usuarios": user_count, "total_registros": reg_count}
