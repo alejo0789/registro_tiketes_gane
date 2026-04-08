@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -101,7 +101,7 @@ app.mount("/acertemos_premium_ui", StaticFiles(directory="acertemos_premium_ui")
 @app.get("/")
 @app.get("/index.html")
 def read_index():
-    return FileResponse("index.html")
+    return RedirectResponse(url="/dashboard")
 
 # Serve dashboard.html
 @app.get("/dashboard")
