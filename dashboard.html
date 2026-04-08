@@ -1183,6 +1183,16 @@
         }
 
         window.onload = async () => {
+            // Truco agresivo para borrar el auto-completado rebelde de Chrome
+            const clearInputs = () => {
+                const s = document.getElementById('searchFilter');
+                const t = document.getElementById('ticketFilter');
+                if (s) s.value = '';
+                if (t) t.value = '';
+            };
+            clearInputs();
+            setTimeout(clearInputs, 150); // En caso de que el navegador lo ponga 1 milisegundo despues
+
             const adminName = localStorage.getItem('admin_username') || 'Admin';
             const adminEl = document.getElementById('currentAdminName');
             if (adminEl) adminEl.textContent = adminName;
