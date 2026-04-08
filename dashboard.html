@@ -1157,7 +1157,7 @@
                 activo: true
             };
 
-            const url = sId ? `${API_URL}/sorteos/${sId}` : `${API_URL}/sorteos`;
+            const url = sId ? `${API_URL}sorteos/${sId}` : `${API_URL}sorteos`;
             const method = sId ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
