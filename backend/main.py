@@ -26,16 +26,16 @@ def run_migrations():
     with engine.connect() as conn:
         inspector = inspect(engine)
         
-        # --- marketing_clientes_sorteos ---
-        t_name = "marketing_clientes_sorteos"
+        # --- gane_clientes_sorteos ---
+        t_name = "gane_clientes_sorteos"
         if t_name in inspector.get_table_names():
             existing_cols = [c["name"] for c in inspector.get_columns(t_name)]
             if "telefono" not in existing_cols:
                 conn.execute(text(f"ALTER TABLE {t_name} ADD COLUMN telefono VARCHAR(255)"))
                 conn.commit()
 
-        # --- marketing_registros_sorteo: soporte betplay/chance ---
-        t_reg = "marketing_registros_sorteo"
+        # --- gane_registros_sorteo: soporte betplay/chance ---
+        t_reg = "gane_registros_sorteo"
         if t_reg in inspector.get_table_names():
             reg_cols = [c["name"] for c in inspector.get_columns(t_reg)]
             new_reg_cols = {
@@ -49,8 +49,8 @@ def run_migrations():
                     conn.execute(text(f"ALTER TABLE {t_reg} ADD COLUMN {col} {col_type}"))
                     conn.commit()
 
-        # --- marketing_whatsapp_sessions: soporte betplay/chance ---
-        t_sess = "marketing_whatsapp_sessions"
+        # --- gane_whatsapp_sessions: soporte betplay/chance ---
+        t_sess = "gane_whatsapp_sessions"
         if t_sess in inspector.get_table_names():
             sess_cols = [c["name"] for c in inspector.get_columns(t_sess)]
             new_sess_cols = {

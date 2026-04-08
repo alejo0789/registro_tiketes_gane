@@ -5,6 +5,13 @@ import datetime
 import pytz
 
 Base = declarative_base()
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Boolean, Date, Numeric
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+import datetime
+import pytz
+
+Base = declarative_base()
 
 def get_colombia_time():
     """Retorna la hora actual en Colombia (UTC-5)."""
@@ -12,7 +19,7 @@ def get_colombia_time():
     return datetime.datetime.now(tz)
 
 class User(Base):
-    __tablename__ = "marketing_clientes_sorteos"
+    __tablename__ = "gane_clientes_sorteos"
     
     cedula = Column(String(50), primary_key=True)
     nombre_completo = Column(String(255), nullable=False)
@@ -22,7 +29,7 @@ class User(Base):
     registros = relationship("RegistroSorteo", back_populates="usuario")
 
 class SorteoConfig(Base):
-    __tablename__ = "marketing_sorteos_config"
+    __tablename__ = "gane_sorteos_config"
     
     id = Column(Integer, primary_key=True)
     nombre_sorteo = Column(String(255), nullable=False)
@@ -33,11 +40,11 @@ class SorteoConfig(Base):
     registros = relationship("RegistroSorteo", back_populates="sorteo_info")
 
 class RegistroSorteo(Base):
-    __tablename__ = "marketing_registros_sorteo"
+    __tablename__ = "gane_registros_sorteo"
     
     id = Column(Integer, primary_key=True)
-    cedula = Column(String(50), ForeignKey("marketing_clientes_sorteos.cedula"), nullable=False)
-    sorteo_id = Column(Integer, ForeignKey("marketing_sorteos_config.id"), nullable=False)
+    cedula = Column(String(50), ForeignKey("gane_clientes_sorteos.cedula"), nullable=False)
+    sorteo_id = Column(Integer, ForeignKey("gane_sorteos_config.id"), nullable=False)
     numero_registro = Column(String(100), nullable=False)  # id.tra del ticket
     tipo_ticket = Column(String(20), nullable=True, default="betplay")  # 'betplay' | 'chance'
     id_transaccion = Column(String(100), nullable=True)  # id.tra
@@ -50,7 +57,7 @@ class RegistroSorteo(Base):
     sorteo_info = relationship("SorteoConfig", back_populates="registros")
 
 class WhatsAppSession(Base):
-    __tablename__ = "marketing_whatsapp_sessions"
+    __tablename__ = "gane_whatsapp_sessions"
     
     telefono = Column(String(50), primary_key=True)
     paso = Column(String(50), default="INICIO")  # INICIO, CEDULA, NOMBRE, TICKET, FOTO
@@ -64,7 +71,7 @@ class WhatsAppSession(Base):
     ultima_interaccion = Column(DateTime, default=get_colombia_time, onupdate=get_colombia_time)
 
 class AdminUser(Base):
-    __tablename__ = "marketing_admin_users"
+    __tablename__ = "gane_admin_users"
     
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
