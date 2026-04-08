@@ -120,7 +120,8 @@
 
             try {
                 // Determine API root
-                const API_URL = window.location.pathname.includes('/registro_sorteos/') ? "/registro_sorteos/" : "";
+                const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+                const API_URL = basePath;
                 
                 const response = await fetch(API_URL + 'api/login', {
                     method: 'POST',

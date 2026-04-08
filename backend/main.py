@@ -101,7 +101,7 @@ app.mount("/acertemos_premium_ui", StaticFiles(directory="acertemos_premium_ui")
 @app.get("/")
 @app.get("/index.html")
 def read_index():
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="dashboard.html")
 
 # Serve dashboard.html
 @app.get("/dashboard")

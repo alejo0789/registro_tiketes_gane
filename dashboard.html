@@ -795,9 +795,9 @@
 
     <script>
         // Auto-detect API root based on the current location
-        const API_URL = window.location.pathname.includes('/registro_sorteos/')
-            ? "/registro_sorteos/"
-            : "";
+        // Auto-detect API root based on the current location
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const API_URL = basePath;
         let allSorteos = [];
         let currentPage = 1;
         let totalPages = 1;
