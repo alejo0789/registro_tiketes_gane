@@ -120,7 +120,7 @@
 
             try {
                 // Determine API root
-                const API_URL = window.location.pathname.includes('/registro_sorteos/') ? "/registro_sorteos/" : "/";
+                const API_URL = window.location.pathname.includes('/registro_sorteos/') ? "/registro_sorteos/" : "";
                 
                 const response = await fetch(API_URL + 'api/login', {
                     method: 'POST',
@@ -131,6 +131,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem('auth_token_acertemos', data.access_token);
+                    localStorage.setItem('admin_username', user);
                     window.location.href = 'dashboard.html';
                 } else {
                     errorMsg.style.display = 'block';

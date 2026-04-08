@@ -182,3 +182,19 @@ class AdminLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+# Admin User Management Schemas
+class AdminUserBase(BaseModel):
+    username: str
+
+class AdminUserCreate(AdminUserBase):
+    password: str
+
+class AdminUserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+class AdminUser(AdminUserBase):
+    id: int
+    class Config:
+        from_attributes = True

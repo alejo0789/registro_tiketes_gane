@@ -908,6 +908,64 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
     return {"mensaje": "Opción no reconocida.", "paso_siguiente": "INICIO"}
 
+@app.get("/api/admin/users", response_model=List[schemas.AdminUser])
+def get_admin_users(db: Session = Depends(get_db)):
+    return db.query(models.AdminUser).all()
+
+@app.post("/api/admin/users", response_model=schemas.AdminUser)
+def create_admin_user(data: schemas.AdminUserCreate, db: Session = Depends(get_db)):
+    import hashlib
+    hashed_pw = hashlib.sha256(data.password.encode()).hexdigest()
+    # Check if username exists
+    existing = db.query(models.AdminUser).filter(models.AdminUser.username == data.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="El nombre de usuario ya existe")
+    
+    db_user = models.AdminUser(username=data.username, password_hash=hashed_pw)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.put("/api/admin/users/{user_id}", response_model=schemas.AdminUser)
+def update_admin_user(user_id: int, data: schemas.AdminUserUpdate, db: Session = Depends(get_db)):
+    db_user = db.query(models.AdminUser).filter(models.AdminUser.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if data.username:
+        # Check if username exists for other user
+        existing = db.query(models.AdminUser).filter(
+            models.AdminUser.username == data.username,
+            models.AdminUser.id != user_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="El nombre de usuario ya existe")
+        db_user.username = data.username
+        
+    if data.password:
+        import hashlib
+        db_user.password_hash = hashlib.sha256(data.password.encode()).hexdigest()
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_admin_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = db.query(models.AdminUser).filter(models.AdminUser.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Optional: ensure we don't delete the last admin
+    total_admins = db.query(func.count(models.AdminUser.id)).scalar()
+    if total_admins <= 1:
+        raise HTTPException(status_code=400, detail="No se puede eliminar el último administrador")
+        
+    db.delete(db_user)
+    db.commit()
+    return {"detail": "Usuario eliminado correctamente"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
