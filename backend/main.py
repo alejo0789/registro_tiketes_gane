@@ -49,6 +49,14 @@ def run_migrations():
                     conn.execute(text(f"ALTER TABLE {t_reg} ADD COLUMN {col} {col_type}"))
                     conn.commit()
 
+        # --- gane_sorteos_config ---
+        t_sorteo = "gane_sorteos_config"
+        if t_sorteo in inspector.get_table_names():
+            sorteo_cols = [c["name"] for c in inspector.get_columns(t_sorteo)]
+            if "premio" not in sorteo_cols:
+                conn.execute(text(f"ALTER TABLE {t_sorteo} ADD COLUMN premio VARCHAR(255)"))
+                conn.commit()
+
         # --- gane_whatsapp_sessions: soporte betplay/chance ---
         t_sess = "gane_whatsapp_sessions"
         if t_sess in inspector.get_table_names():
@@ -359,11 +367,12 @@ def register_from_whatsapp(data: schemas.WhatsAppRegistroCreate, db: Session = D
     MOTO_GOAL = 10
     tickets_restantes = max(0, MOTO_GOAL - total_tickets)
     
+    premio_text = active_sorteo.premio or "la moto"
     msg = f"¡Registro exitoso! Llevas {total_tickets} ticket(s)."
     if tickets_restantes > 0:
-        msg += f" Te faltan {tickets_restantes} para participar por la moto."
+        msg += f" Te faltan {tickets_restantes} para participar por {premio_text}."
     else:
-        msg += " ¡Ya estás participando por la moto! 🏍️"
+        msg += f" ¡Ya estás participando por {premio_text}! 🏍️"
 
     return schemas.WhatsAppRegistroResponse(
         status="success",
@@ -598,8 +607,9 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             else:
                 session.paso = "CEDULA"
                 db.commit()
+                premio_text = active_sorteo.premio or "la moto"
                 return {
-                    "mensaje": "¡Perfecto! Estás participando por la *moto eléctrica* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
+                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
                     "paso_siguiente": "CEDULA"
                 }
         elif opcion == "2":
@@ -899,10 +909,11 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         
         msg += f"Llevas *{total} tickets* registrados."
         
+        premio_text = active_sorteo.premio or "la moto"
         if restantes > 0:
-            msg += f"\n\nTe faltan *{restantes}* para participar por la *moto eléctrica*. 🏙️\n\nSi tienes otro ticket, envíalo ahora."
+            msg += f"\n\nTe faltan *{restantes}* para participar por *{premio_text}*. 🏙️\n\nSi tienes otro ticket, envíalo ahora."
         else:
-            msg += "\n\n¡Felicidades! Ya estás participando por la *moto*. 🏙️✨\n\nSi tienes más tickets, puedes seguir registrándolos."
+            msg += f"\n\n¡Felicidades! Ya estás participando por *{premio_text}*. 🏙️✨\n\nSi tienes más tickets, puedes seguir registrándolos."
 
         return {"mensaje": msg, "paso_siguiente": "TICKET", "total_tickets": total}
 

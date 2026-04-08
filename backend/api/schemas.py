@@ -9,6 +9,7 @@ class SorteoConfigBase(BaseModel):
     fecha_inicio: date
     fecha_fin: date
     activo: bool = True
+    premio: Optional[str] = None
 
 class SorteoConfigCreate(SorteoConfigBase):
     pass
@@ -18,6 +19,7 @@ class SorteoConfigUpdate(BaseModel):
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
     activo: Optional[bool] = None
+    premio: Optional[str] = None
 
 class SorteoConfig(SorteoConfigBase):
     id: int

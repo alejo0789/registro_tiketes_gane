@@ -36,6 +36,7 @@ class SorteoConfig(Base):
     fecha_inicio = Column(Date, nullable=False)
     fecha_fin = Column(Date, nullable=False)
     activo = Column(Boolean, default=True)
+    premio = Column(String(255), nullable=True)
     
     registros = relationship("RegistroSorteo", back_populates="sorteo_info")
 

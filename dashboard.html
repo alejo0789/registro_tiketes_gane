@@ -777,6 +777,10 @@
                     <input type="text" id="sNombre" required placeholder="Ej. Baloto de Pascua">
                 </div>
                 <div class="form-group">
+                    <label>Premio del Sorteo</label>
+                    <input type="text" id="sPremio" placeholder="Ej. Moto eléctrica o Bono de 500k">
+                </div>
+                <div class="form-group">
                     <label>Fecha de Inicio</label>
                     <input type="date" id="sInicio" required>
                 </div>
@@ -1051,6 +1055,7 @@
             document.getElementById('modalTitle').textContent = "Editar Sorteo";
             document.getElementById('sId').value = s.id;
             document.getElementById('sNombre').value = s.nombre_sorteo;
+            document.getElementById('sPremio').value = s.premio || '';
             document.getElementById('sInicio').value = s.fecha_inicio;
             document.getElementById('sFin').value = s.fecha_fin;
             document.getElementById('modal').style.display = 'flex';
@@ -1146,6 +1151,7 @@
             const sId = document.getElementById('sId').value;
             const data = {
                 nombre_sorteo: document.getElementById('sNombre').value,
+                premio: document.getElementById('sPremio').value || null,
                 fecha_inicio: document.getElementById('sInicio').value,
                 fecha_fin: document.getElementById('sFin').value,
                 activo: true
