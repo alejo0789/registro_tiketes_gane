@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -138,7 +140,13 @@ try:
 except Exception as e:
     print(f"[Init Admin] Skipped or error: {e}")
 
-app = FastAPI(title="Acertemos Sorteos API")
+app = FastAPI(
+    title="Acertemos Sorteos API",
+    # Deshabilitar docs en producción para no exponer endpoints públicamente
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 # Ensure assets directory exists and mount it
 os.makedirs("assets/receipts", exist_ok=True)
@@ -195,6 +203,26 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
+
+# ─── Security Headers Middleware ─────────────────────────────────────────────
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        # Evita que el navegador adivine el tipo MIME (sniffing)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Impide que la app se cargue en un iframe (clickjacking)
+        response.headers["X-Frame-Options"] = "DENY"
+        # Activa el filtro XSS del navegador
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Controla cuánta información de referencia se envía
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Desactiva permisos del navegador que no necesitamos
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
+        # Oculta el header del servidor (no revelar tecnología)
+        response.headers["Server"] = "WebServer"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 @app.get("/check-user/{cedula}", response_model=Optional[schemas.UserBase])
 def check_user(cedula: str, db: Session = Depends(get_db)):
