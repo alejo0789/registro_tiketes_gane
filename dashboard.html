@@ -802,6 +802,9 @@
         // Auto-detect API root based on the current location
         const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         const API_URL = basePath;
+        // Token del admin (guardado al iniciar sesión)
+        const AUTH_TOKEN = localStorage.getItem('auth_token_acertemos') || '';
+        const AUTH_HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_TOKEN}` };
         let allSorteos = [];
         let currentPage = 1;
         let totalPages = 1;
@@ -945,7 +948,7 @@
         // ─────────────────────────────────────────────────────────────────────
 
         async function loadSorteos() {
-            const res = await fetch(`${API_URL}sorteos?active_only=false`);
+            const res = await fetch(`${API_URL}sorteos?active_only=false`, { headers: AUTH_HEADERS });
             allSorteos = await res.json();
             const filter = document.getElementById('sorteoFilter');
             const currentValue = filter.value; // Guardar valor actual
@@ -970,7 +973,7 @@
             const sorteoId = document.getElementById('sorteoFilter').value;
 
             // 1. Load Stats
-            const statsRes = await fetch(`${API_URL}dashboard/stats` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''));
+            const statsRes = await fetch(`${API_URL}dashboard/stats` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''), { headers: AUTH_HEADERS });
             const stats = await statsRes.json();
             document.getElementById('totalUsers').textContent = stats.total_usuarios;
             document.getElementById('totalRegistros').textContent = stats.total_registros;
@@ -983,7 +986,7 @@
             if (search) query += `&search=${encodeURIComponent(search)}`;
             if (ticket) query += `&ticket_number=${encodeURIComponent(ticket)}`;
 
-            const usersRes = await fetch(query);
+            const usersRes = await fetch(query, { headers: AUTH_HEADERS });
             const data = await usersRes.json();
             const users = data.items;
             totalPages = data.pages;
@@ -1065,7 +1068,7 @@
 
         async function viewReceipts(cedula) {
             const sorteoId = document.getElementById('sorteoFilter').value;
-            const res = await fetch(`${API_URL}dashboard/user-receipts/${cedula}` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''));
+            const res = await fetch(`${API_URL}dashboard/user-receipts/${cedula}` + (sorteoId ? `?sorteo_id=${sorteoId}` : ''), { headers: AUTH_HEADERS });
             const receipts = await res.json();
 
             // Update user label
@@ -1162,7 +1165,7 @@
 
             const res = await fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: AUTH_HEADERS,
                 body: JSON.stringify(data)
             });
 

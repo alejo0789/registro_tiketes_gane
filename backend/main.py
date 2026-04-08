@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
@@ -9,6 +9,46 @@ import datetime
 import os
 import uuid
 import re
+import time
+from collections import defaultdict
+
+# ─── Cargar variables de seguridad ───────────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
+
+WHATSAPP_API_KEY = os.getenv("WHATSAPP_API_KEY", "")
+ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_ENV.split(",")] if ALLOWED_ORIGINS_ENV != "*" else ["*"]
+ADMIN_TOKEN = "valid_admin_token_acertemos"  # Token del dashboard
+
+# ─── Rate Limiting simple para login (en memoria) ────────────────────────────
+_login_attempts: dict = defaultdict(list)
+LOGIN_MAX_ATTEMPTS = 10
+LOGIN_WINDOW_SECONDS = 60
+
+def check_rate_limit(ip: str):
+    now = time.time()
+    attempts = _login_attempts[ip]
+    # Limpiar intentos fuera de la ventana de tiempo
+    _login_attempts[ip] = [t for t in attempts if now - t < LOGIN_WINDOW_SECONDS]
+    if len(_login_attempts[ip]) >= LOGIN_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Demasiados intentos. Espera un momento.")
+    _login_attempts[ip].append(now)
+
+# ─── Dependencia: verificar API Key de n8n ───────────────────────────────────
+def verify_n8n_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    if not WHATSAPP_API_KEY:
+        return  # Si no está configurada la key, no bloquear (modo desarrollo)
+    if x_api_key != WHATSAPP_API_KEY:
+        raise HTTPException(status_code=403, detail="Acceso denegado. API Key inválida.")
+
+# ─── Dependencia: verificar token de admin del dashboard ─────────────────────
+def verify_admin_token(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token de autenticación requerido.")
+    token = authorization.replace("Bearer ", "").strip()
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Token inválido o expirado.")
 
 from backend.cloudinary_service import upload_image_to_cloudinary
 
@@ -128,7 +168,11 @@ def read_login():
     return FileResponse("login.html")
 
 @app.post("/api/login", response_model=schemas.Token)
-def login_admin(data: schemas.AdminLogin, db: Session = Depends(get_db)):
+def login_admin(request: Request, data: schemas.AdminLogin, db: Session = Depends(get_db)):
+    # Rate limiting por IP
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit(client_ip)
+
     import hashlib
     hashed_pw = hashlib.sha256(data.password.encode()).hexdigest()
     admin = db.query(models.AdminUser).filter(
@@ -138,16 +182,18 @@ def login_admin(data: schemas.AdminLogin, db: Session = Depends(get_db)):
     
     if not admin:
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
-        
-    return {"access_token": "valid_admin_token_acertemos", "token_type": "bearer"}
+    
+    # Limpiar intentos al loguearse correctamente
+    _login_attempts[client_ip] = []
+    return {"access_token": ADMIN_TOKEN, "token_type": "bearer"}
 
-# Enable CORS for frontend interaction
+# ─── CORS restrictivo ────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 @app.get("/check-user/{cedula}", response_model=Optional[schemas.UserBase])
@@ -157,20 +203,26 @@ def check_user(cedula: str, db: Session = Depends(get_db)):
         return user
     return None
 
-@app.post("/upload-receipt")
+@app.post("/upload-receipt", dependencies=[Depends(verify_n8n_key)])
 async def upload_receipt(file: UploadFile = File(...), sorteo_nombre: Optional[str] = Query(None)):
-    # Generar nombre único para el archivo
-    file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    filename = f"comprobante_{uuid.uuid4()}{file_extension}"
+    # Validar tipo de archivo
+    ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"]
+    if file.content_type and file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail=f"Tipo de archivo no permitido: {file.content_type}")
 
     # Leer el contenido del archivo en memoria
     file_bytes = await file.read()
 
-    # Definir la carpeta basado en el sorteo (o 'general' si no viene ninguno)
+    # Limitar tamaño: máximo 10 MB
+    MAX_SIZE = 10 * 1024 * 1024
+    if len(file_bytes) > MAX_SIZE:
+        raise HTTPException(status_code=400, detail="El archivo supera el tamaño máximo de 10 MB.")
+
+    file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"comprobante_{uuid.uuid4()}{file_extension}"
     folder_name = f"sorteos/{sorteo_nombre.replace(' ', '_')}" if sorteo_nombre else "sorteos/general"
 
     try:
-        # Subir a Cloudinary con el folder dinámico
         public_url = upload_image_to_cloudinary(file_bytes, filename, folder=folder_name)
         return {"url": public_url}
     except Exception as e:
@@ -242,7 +294,7 @@ def register_to_sorteo(data: schemas.RegistroCreate, db: Session = Depends(get_d
         tickets_restantes=tickets_restantes
     )
 
-@app.get("/whatsapp/check-user/{telefono}", response_model=schemas.WhatsAppUserCheck)
+@app.get("/whatsapp/check-user/{telefono}", response_model=schemas.WhatsAppUserCheck, dependencies=[Depends(verify_n8n_key)])
 def check_user_by_phone(telefono: str, db: Session = Depends(get_db)):
     # Sanitize phone
     clean_tel = telefono.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").strip()
@@ -260,7 +312,7 @@ def check_user_by_phone(telefono: str, db: Session = Depends(get_db)):
         )
     return schemas.WhatsAppUserCheck(exists=False)
 
-@app.get("/whatsapp/check-ticket/{numero_sorteo}", response_model=schemas.WhatsAppTicketCheck)
+@app.get("/whatsapp/check-ticket/{numero_sorteo}", response_model=schemas.WhatsAppTicketCheck, dependencies=[Depends(verify_n8n_key)])
 def check_ticket_registration(numero_sorteo: str, db: Session = Depends(get_db)):
     # 1. Find the current active sorteo
     from backend.db.models import get_colombia_time
@@ -288,7 +340,7 @@ def check_ticket_registration(numero_sorteo: str, db: Session = Depends(get_db))
     
     return schemas.WhatsAppTicketCheck(registered=False, mensaje="Ticket disponible para registro.")
 
-@app.post("/whatsapp/register", response_model=schemas.WhatsAppRegistroResponse)
+@app.post("/whatsapp/register", response_model=schemas.WhatsAppRegistroResponse, dependencies=[Depends(verify_n8n_key)])
 def register_from_whatsapp(data: schemas.WhatsAppRegistroCreate, db: Session = Depends(get_db)):
     # Sanitize data
     data.cedula = re.sub(r"\D", "", data.cedula)
@@ -395,7 +447,7 @@ def get_sorteos(active_only: bool = True, db: Session = Depends(get_db)):
                              models.SorteoConfig.fecha_fin >= today)
     return query.all()
 
-@app.post("/sorteos", response_model=schemas.SorteoConfig)
+@app.post("/sorteos", response_model=schemas.SorteoConfig, dependencies=[Depends(verify_admin_token)])
 def create_sorteo(sorteo: schemas.SorteoConfigCreate, db: Session = Depends(get_db)):
     db_sorteo = models.SorteoConfig(**sorteo.dict())
     db.add(db_sorteo)
@@ -403,7 +455,7 @@ def create_sorteo(sorteo: schemas.SorteoConfigCreate, db: Session = Depends(get_
     db.refresh(db_sorteo)
     return db_sorteo
 
-@app.put("/sorteos/{sorteo_id}", response_model=schemas.SorteoConfig)
+@app.put("/sorteos/{sorteo_id}", response_model=schemas.SorteoConfig, dependencies=[Depends(verify_admin_token)])
 def update_sorteo(sorteo_id: int, sorteo_update: schemas.SorteoConfigUpdate, db: Session = Depends(get_db)):
     db_sorteo = db.query(models.SorteoConfig).filter(models.SorteoConfig.id == sorteo_id).first()
     if not db_sorteo:
@@ -417,7 +469,7 @@ def update_sorteo(sorteo_id: int, sorteo_update: schemas.SorteoConfigUpdate, db:
     db.refresh(db_sorteo)
     return db_sorteo
 
-@app.get("/dashboard/stats", response_model=schemas.DashboardStats)
+@app.get("/dashboard/stats", response_model=schemas.DashboardStats, dependencies=[Depends(verify_admin_token)])
 def get_dashboard_stats(sorteo_id: Optional[int] = None, db: Session = Depends(get_db)):
     reg_query = db.query(func.count(models.RegistroSorteo.id))
     
@@ -433,7 +485,7 @@ def get_dashboard_stats(sorteo_id: Optional[int] = None, db: Session = Depends(g
     
     return {"total_usuarios": user_count, "total_registros": reg_count}
 
-@app.get("/dashboard/users", response_model=schemas.UserTableResponse)
+@app.get("/dashboard/users", response_model=schemas.UserTableResponse, dependencies=[Depends(verify_admin_token)])
 def get_dashboard_users(
     sorteo_id: Optional[int] = None, 
     search: Optional[str] = None,
@@ -496,7 +548,7 @@ def get_dashboard_users(
         "current_page": page
     }
 
-@app.get("/dashboard/user-receipts/{cedula}", response_model=List[schemas.ReceiptItem])
+@app.get("/dashboard/user-receipts/{cedula}", response_model=List[schemas.ReceiptItem], dependencies=[Depends(verify_admin_token)])
 def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(
         models.RegistroSorteo.numero_registro,
@@ -527,7 +579,7 @@ def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session 
         ) for r in results
     ]
 
-@app.post("/whatsapp/interact", response_model=schemas.WhatsAppInteractResponse)
+@app.post("/whatsapp/interact", response_model=schemas.WhatsAppInteractResponse, dependencies=[Depends(verify_n8n_key)])
 def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = Depends(get_db)):
     """
     Orquestador de lógica para WhatsApp. n8n solo actúa como puente.
