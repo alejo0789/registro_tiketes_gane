@@ -170,6 +170,10 @@ def read_dashboard():
 def read_terminos():
     return FileResponse("terminos.html")
 
+@app.get("/politica_privacidad.html")
+def read_politica():
+    return FileResponse("politica_privacidad.html")
+
 @app.get("/login")
 @app.get("/login.html")
 def read_login():
@@ -694,7 +698,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 db.commit()
                 premio_text = active_sorteo.premio or "la moto"
                 return {
-                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad._",
+                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸 o escribe tu número de cédula.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://saman.lafortuna.com.co/politica_privacidad.html",
                     "paso_siguiente": "CEDULA"
                 }
         elif opcion == "2":
@@ -801,7 +805,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         # Si llegó un ticket en vez de cédula, avisamos
         elif tipo_doc in ("betplay", "chance"):
             return {
-                "mensaje": "⚠️ Primero necesito tu *cédula*. Por favor envía una foto clara de ella.",
+                "mensaje": "⚠️ Primero necesito tu *cédula*. Por favor envía una foto clara de ella o escribe tu número de cédula.",
                 "paso_siguiente": "CEDULA"
             }
         else:
