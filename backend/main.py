@@ -171,6 +171,8 @@ def read_terminos():
     return FileResponse("terminos.html")
 
 @app.get("/politica_privacidad.html")
+@app.get("/sorteos_gane/politica_privacidad.html")
+@app.get("/sorteos_gane/politicia_privacidad.html")
 def read_politica():
     return FileResponse("politica_privacidad.html")
 
@@ -698,7 +700,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 db.commit()
                 premio_text = active_sorteo.premio or "la moto"
                 return {
-                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸 o escribe tu número de cédula.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://saman.lafortuna.com.co/politica_privacidad.html",
+                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸 o escribe tu número de cédula.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://saman.lafortuna.com.co/sorteos_gane/politicia_privacidad.html",
                     "paso_siguiente": "CEDULA"
                 }
         elif opcion == "2":
