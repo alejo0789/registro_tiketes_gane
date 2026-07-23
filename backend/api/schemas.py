@@ -133,11 +133,13 @@ class WhatsAppInteractRequest(BaseModel):
     extracted_cedula: Optional[str] = None
     extracted_nombre: Optional[str] = None
     # Campos del tipo de documento detectado
-    tipo_documento_detectado: Optional[str] = None  # 'cedula' | 'betplay' | 'chance'
-    # Campos extraídos de tickets (betplay y chance)
-    extracted_id_tra: Optional[str] = None      # id.tra para ambos tipos
-    extracted_identificacion: Optional[str] = None  # identificacion (solo betplay)
-    extracted_valor: Optional[str] = None       # Valor recarga (betplay) o Total (chance)
+    tipo_documento_detectado: Optional[str] = None  # 'cedula' | 'betplay' | 'chance' | 'keno' | 'invalido'
+    # Campos extraídos de tickets
+    extracted_id_tra: Optional[str] = None          # id.tra para tickets
+    extracted_identificacion: Optional[str] = None  # identificacion (betplay, etc.)
+    extracted_valor: Optional[str] = None           # Valor recarga o Total
+    tipo_juego: Optional[str] = None                # Tipo de juego extraído
+    fecha_sorteo: Optional[str] = None              # Fecha del sorteo extraída (dd.mm.yyyy)
     # Compatibilidad con campo antiguo
     extracted_ticket: Optional[str] = None
 

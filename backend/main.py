@@ -174,7 +174,8 @@ def read_terminos():
 @app.get("/sorteos_gane/politica_privacidad.html")
 @app.get("/sorteos_gane/politicia_privacidad.html")
 def read_politica():
-    return FileResponse("politica_privacidad.html")
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="https://ganeyumbo.com/wp-content/uploads/2024/02/PO-CMP-02_Politica_Para_El_Tratamiento_de_Datos_Personales_MR_V.03_-_2023-1.pdf")
 
 @app.get("/login")
 @app.get("/login.html")
@@ -700,7 +701,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 db.commit()
                 premio_text = active_sorteo.premio or "la moto"
                 return {
-                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, envíame una *foto clara de tu cédula* 📸 o escribe tu número de cédula.\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://saman.lafortuna.com.co/sorteos_gane/politicia_privacidad.html",
+                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, por favor *escribe tu número de cédula* (solo números).\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://ganeyumbo.com/wp-content/uploads/2024/02/PO-CMP-02_Politica_Para_El_Tratamiento_de_Datos_Personales_MR_V.03_-_2023-1.pdf",
                     "paso_siguiente": "CEDULA"
                 }
         elif opcion == "2":
@@ -771,7 +772,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         if tipo_doc == "cedula" or data.extracted_cedula:
             val = clean_num(data.extracted_cedula or texto)
             if not val or not val.isdigit() or len(val) < 6:
-                return {"mensaje": "⚠️ No logré leer la cédula. Por favor escíbela manualmente o envía una foto más clara.", "paso_siguiente": "CEDULA"}
+                return {"mensaje": "⚠️ Número no válido. Por favor escribe tu número de cédula manualmente (solo números).", "paso_siguiente": "CEDULA"}
 
             session.cedula = val
             user_existing = db.query(models.User).filter(models.User.cedula == val).first()
@@ -807,14 +808,14 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         # Si llegó un ticket en vez de cédula, avisamos
         elif tipo_doc in ("betplay", "chance"):
             return {
-                "mensaje": "⚠️ Primero necesito tu *cédula*. Por favor envía una foto clara de ella o escribe tu número de cédula.",
+                "mensaje": "⚠️ Primero necesito tu *cédula*. Por favor escribe tu número de cédula (solo números).",
                 "paso_siguiente": "CEDULA"
             }
         else:
             # Texto manual de cédula
             val = clean_num(texto)
             if not val or not val.isdigit() or len(val) < 6:
-                return {"mensaje": "⚠️ Por favor envía la foto de tu cédula o escíbela manualmente (solo números).", "paso_siguiente": "CEDULA"}
+                return {"mensaje": "⚠️ Por favor escribe tu número de cédula válido (solo números).", "paso_siguiente": "CEDULA"}
             session.cedula = val
             user_existing = db.query(models.User).filter(models.User.cedula == val).first()
             if user_existing:
