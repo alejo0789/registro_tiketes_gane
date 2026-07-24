@@ -922,6 +922,42 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                     "paso_siguiente": "FOTO"
                 }
 
+        # ===== CASO: n8n detectó KENO =====
+        elif tipo_doc == "keno" and data.extracted_id_tra:
+            id_tra = clean_num(data.extracted_id_tra)
+            valor = clean_num(data.extracted_valor)
+
+            existing = db.query(models.RegistroSorteo).filter(
+                models.RegistroSorteo.sorteo_id == active_sorteo.id,
+                models.RegistroSorteo.numero_registro == id_tra
+            ).first()
+            if existing:
+                return {"mensaje": f"⚠️ El ticket Keno con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+
+            session.numero_registro = id_tra
+            session.tipo_ticket_pendiente = "keno"
+            session.identificacion_pendiente = None
+            session.valor_pendiente = valor
+
+            if data.media_url:
+                session.paso = "FOTO"
+                db.commit()
+                # Caer al bloque FOTO
+            else:
+                session.paso = "FOTO"
+                db.commit()
+                return {
+                    "mensaje": f"🏟️ *Ticket Keno detectado* ✅\n"
+                               f"\u2022 ID Transacción: *{id_tra}*\n"
+                               f"\u2022 Total: *${valor or 'N/A'}*\n\n"
+                               "Envíame la *foto clara del ticket* para completar el registro.",
+                    "paso_siguiente": "FOTO"
+                }
+
+        # ===== CASO: n8n detectó INVALIDO =====
+        elif tipo_doc == "invalido":
+            return {"mensaje": "⚠️ La imagen enviada no parece ser un ticket válido. Por favor, asegúrate de enviar una foto clara del ticket.", "paso_siguiente": "TICKET"}
+
         # ===== TEXTO MANUAL (compatibilidad antigua) =====
         else:
             val_ticket = data.extracted_ticket or texto
@@ -987,7 +1023,14 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         session.valor_pendiente = None
         db.commit()
 
-        tipo_label = "🎰 Betplay" if tipo == "betplay" else "🏵️ Chance"
+        if tipo == "betplay":
+            tipo_label = "🎰 Betplay"
+        elif tipo == "chance":
+            tipo_label = "🏵️ Chance"
+        elif tipo == "keno":
+            tipo_label = "🎱 Keno"
+        else:
+            tipo_label = "🎟️ Ticket"
         
         # Formatear el valor si existe
         valor_str = f"${int(valor):,}".replace(",", ".") if valor and valor.isdigit() else (f"${valor}" if valor else "N/A")
