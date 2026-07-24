@@ -853,19 +853,29 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
     # --- PASO: TICKET ---
     if session.paso == "TICKET":
+        # Validación de fecha de vigencia (1 mes max)
+        if data.fecha_sorteo:
+            try:
+                date_str = data.fecha_sorteo.replace("-", ".").replace("/", ".")
+                fecha_obj = datetime.datetime.strptime(date_str, "%d.%m.%Y")
+                limit_date = datetime.datetime.now() - datetime.timedelta(days=30)
+                if fecha_obj < limit_date:
+                    return {"mensaje": "⚠️ El ticket está vencido. Los tickets solo son válidos por 1 mes después de su expedición.", "paso_siguiente": "TICKET"}
+            except ValueError:
+                pass  # Si el formato no es válido, se asume que no se pudo extraer bien y se omite
+
         # ===== CASO: n8n detectó BETPLAY =====
         if tipo_doc == "betplay" and data.extracted_id_tra:
             id_tra = clean_num(data.extracted_id_tra)
             identificacion = clean_num(data.extracted_identificacion)
             valor = clean_num(data.extracted_valor)
 
-            # Verificar duplicado por id_tra en el sorteo
+            # Verificar duplicado por id_tra globalmente
             existing = db.query(models.RegistroSorteo).filter(
-                models.RegistroSorteo.sorteo_id == active_sorteo.id,
                 models.RegistroSorteo.numero_registro == id_tra
             ).first()
             if existing:
-                return {"mensaje": f"⚠️ El ticket Betplay con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+                return {"mensaje": f"⚠️ El ticket Betplay con ID *{id_tra}* ya fue registrado anteriormente en un sorteo. Cada ticket solo puede ser usado una vez.", "paso_siguiente": "TICKET"}
 
             # Guardar datos en sesión para confirmar con la foto
             session.numero_registro = id_tra
@@ -896,11 +906,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             valor = clean_num(data.extracted_valor)
 
             existing = db.query(models.RegistroSorteo).filter(
-                models.RegistroSorteo.sorteo_id == active_sorteo.id,
                 models.RegistroSorteo.numero_registro == id_tra
             ).first()
             if existing:
-                return {"mensaje": f"⚠️ El ticket Chance con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+                return {"mensaje": f"⚠️ El ticket Chance con ID *{id_tra}* ya fue registrado anteriormente en un sorteo. Cada ticket solo puede ser usado una vez.", "paso_siguiente": "TICKET"}
 
             session.numero_registro = id_tra
             session.tipo_ticket_pendiente = "chance"
@@ -928,11 +937,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             valor = clean_num(data.extracted_valor)
 
             existing = db.query(models.RegistroSorteo).filter(
-                models.RegistroSorteo.sorteo_id == active_sorteo.id,
                 models.RegistroSorteo.numero_registro == id_tra
             ).first()
             if existing:
-                return {"mensaje": f"⚠️ El ticket Keno con ID *{id_tra}* ya fue registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+                return {"mensaje": f"⚠️ El ticket Keno con ID *{id_tra}* ya fue registrado anteriormente en un sorteo. Cada ticket solo puede ser usado una vez.", "paso_siguiente": "TICKET"}
 
             session.numero_registro = id_tra
             session.tipo_ticket_pendiente = "keno"
@@ -967,11 +975,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 return {"mensaje": "⚠️ Por favor envía la *foto de tu ticket Betplay o Chance* para registrarlo.", "paso_siguiente": "TICKET"}
 
             existing = db.query(models.RegistroSorteo).filter(
-                models.RegistroSorteo.sorteo_id == active_sorteo.id,
                 models.RegistroSorteo.numero_registro == val_ticket
             ).first()
             if existing:
-                return {"mensaje": f"⚠️ El ticket *{val_ticket}* ya ha sido registrado. Prueba con otro.", "paso_siguiente": "TICKET"}
+                return {"mensaje": f"⚠️ El ticket *{val_ticket}* ya fue registrado anteriormente en un sorteo. Cada ticket solo puede ser usado una vez.", "paso_siguiente": "TICKET"}
 
             session.numero_registro = val_ticket
             session.tipo_ticket_pendiente = "manual"
