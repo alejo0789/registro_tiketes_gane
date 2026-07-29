@@ -758,11 +758,17 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 
             if result.get("success") == True and result.get("data"):
                 print("Ticket GANADOR detectado.")
-                premio = result["data"][0]
-                nombre_loteria = premio.get("nombreloteria", "la lotería")
-                resultado_num = premio.get("resultado", "")
+                premio_obj = result["data"][0]
+                valor_premio = premio_obj.get("premio", "desconocido")
+                consecutivo = premio_obj.get("consecutivo", "")
                 
-                mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente con *{nombre_loteria}* (Resultado: {resultado_num}). 🏆\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
+                # Formatear el premio si es número
+                try:
+                    valor_fmt = f"${float(valor_premio):,.0f}"
+                except:
+                    valor_fmt = f"${valor_premio}"
+                
+                mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente por valor de *{valor_fmt}* 🏆\n(Consecutivo: {consecutivo}).\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
             else:
                 print("Ticket NO ganador (success=False o sin data).")
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
