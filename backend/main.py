@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 WHATSAPP_API_KEY = os.getenv("WHATSAPP_API_KEY", "")
+OWO_PREMIOS_API_URL = os.getenv("OWO_PREMIOS_API_URL", "https://microservice.aplicacionesgane.cloud/api/v1")
 ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_ENV.split(",")] if ALLOWED_ORIGINS_ENV != "*" else ["*"]
 ADMIN_TOKEN = "valid_admin_token_acertemos"  # Token del dashboard
@@ -736,24 +737,26 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 "paso_siguiente": "CONSULTA_TICKET"
             }
 
-        url_validador = f"https://script.google.com/macros/s/AKfycby6XEiNdZZUXxt9_sxZhO7-tkluNY8KG1WMmAx2LZEbvp6Ij9md38jRFSihms5ltUwx/exec?serie={id_tra}"
+        url_validador = f"{OWO_PREMIOS_API_URL}/premios/pendientes?serie={id_tra}"
         try:
             req = urllib.request.Request(url_validador)
             with urllib.request.urlopen(req, timeout=15) as response:
                 result = json.loads(response.read().decode())
                 
-            if result.get("valido") == True:
-                msg_validador = result.get("mensaje", "")
-                if "GANASTE" in msg_validador.upper():
-                    mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* es un ganador. 🏆\n\n{msg_validador}"
-                else:
-                    mensaje_final = f"Tu ticket *{id_tra}* es válido.\n\n{msg_validador}"
+            if result.get("success") == True and result.get("data"):
+                premio = result["data"][0]
+                nombre_loteria = premio.get("nombreloteria", "la lotería")
+                resultado_num = premio.get("resultado", "")
+                
+                mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente con *{nombre_loteria}* (Resultado: {resultado_num}). 🏆\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
             else:
-                msg_validador = result.get("mensaje", "Contacte a su proveedor.")
-                mensaje_final = f"⚠️ *{id_tra}* no es válido.\n\n{msg_validador}"
+                mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
                 
         except Exception as e:
-            mensaje_final = "Hubo un error verificando el ticket en nuestro sistema (el servidor de consulta está ocupado). Por favor intenta más tarde."
+            if getattr(e, 'code', None) == 404:
+                mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
+            else:
+                mensaje_final = "Hubo un error verificando el ticket en nuestro sistema (el servidor de consulta está ocupado). Por favor intenta más tarde."
         
         # Volvemos al menu independientemente del resultado
         session.paso = "MENU"
