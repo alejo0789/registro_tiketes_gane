@@ -739,29 +739,44 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             }
 
         url_validador = f"{OWO_PREMIOS_API_URL}/premios/pendientes?serie={id_tra}"
+        print(f"\n--- [DEBUG OWO] INICIANDO CONSULTA ---")
+        print(f"Ticket/Serie: {id_tra}")
+        print(f"URL: {url_validador}")
+        
         try:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             
             # Usamos un User-Agent descriptivo para que el dueño de la API lo agregue a la lista blanca
+            print(f"Enviando peticion HTTP GET con User-Agent: Agent-OWO/1.0 ...")
             req = urllib.request.Request(url_validador, headers={'User-Agent': 'Agent-OWO/1.0'})
             with urllib.request.urlopen(req, timeout=15, context=ctx) as response:
-                result = json.loads(response.read().decode())
+                raw_response = response.read().decode()
+                print(f"Respuesta cruda OWO: {raw_response}")
+                result = json.loads(raw_response)
                 
             if result.get("success") == True and result.get("data"):
+                print("Ticket GANADOR detectado.")
                 premio = result["data"][0]
                 nombre_loteria = premio.get("nombreloteria", "la lotería")
                 resultado_num = premio.get("resultado", "")
                 
                 mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente con *{nombre_loteria}* (Resultado: {resultado_num}). 🏆\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
             else:
+                print("Ticket NO ganador (success=False o sin data).")
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
                 
         except Exception as e:
-            if getattr(e, 'code', None) == 404:
+            print(f"[DEBUG OWO ERROR] Ocurrio una excepcion: {type(e).__name__} - {str(e)}")
+            codigo_http = getattr(e, 'code', None)
+            print(f"[DEBUG OWO ERROR] Codigo HTTP extraido: {codigo_http}")
+            
+            if codigo_http == 404:
+                print("El servidor retorno 404. Es decir, NO ES GANADOR.")
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
             else:
+                print("El servidor retorno algo distinto a 404 (ej. 403, 500, Timeout). Mostrando mensaje de error generico.")
                 mensaje_final = f"Hubo un error verificando el ticket en nuestro sistema. Detalle técnico: {type(e).__name__} - {str(e)}"
         
         # Volvemos al menu independientemente del resultado
