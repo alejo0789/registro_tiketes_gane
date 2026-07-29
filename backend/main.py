@@ -745,7 +745,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             ctx.verify_mode = ssl.CERT_NONE
             
             # Usamos un User-Agent descriptivo para que el dueño de la API lo agregue a la lista blanca
-            req = urllib.request.Request(url_validador, headers={'User-Agent': 'WhatsApp-Bot-Gane/1.0'})
+            req = urllib.request.Request(url_validador, headers={'User-Agent': 'Agent-OWO/1.0'})
             with urllib.request.urlopen(req, timeout=15, context=ctx) as response:
                 result = json.loads(response.read().decode())
                 
