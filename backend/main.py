@@ -768,7 +768,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 except:
                     valor_fmt = f"${valor_premio}"
                 
-                mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente por valor de *{valor_fmt}* 🏆\n(Consecutivo: {consecutivo}).\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
+                mensaje_final = f"🎉 ¡FELICIDADES! 🎉\n\nTu ticket *{id_tra}* tiene un premio pendiente por valor de *{valor_fmt}* 🏆\n\nPor favor acércate a tu punto Gane más cercano para reclamarlo."
             else:
                 print("Ticket NO ganador (success=False o sin data).")
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
