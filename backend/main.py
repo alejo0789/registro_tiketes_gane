@@ -756,7 +756,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             if getattr(e, 'code', None) == 404:
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
             else:
-                mensaje_final = "Hubo un error verificando el ticket en nuestro sistema (el servidor de consulta está ocupado). Por favor intenta más tarde."
+                mensaje_final = f"Hubo un error verificando el ticket en nuestro sistema. Detalle técnico: {type(e).__name__} - {str(e)}"
         
         # Volvemos al menu independientemente del resultado
         session.paso = "MENU"
