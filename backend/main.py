@@ -739,7 +739,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
         url_validador = f"{OWO_PREMIOS_API_URL}/premios/pendientes?serie={id_tra}"
         try:
-            req = urllib.request.Request(url_validador)
+            req = urllib.request.Request(url_validador, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=15) as response:
                 result = json.loads(response.read().decode())
                 
