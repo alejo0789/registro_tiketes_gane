@@ -722,6 +722,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     if session.paso == "CONSULTA_TICKET":
         import urllib.request
         import json
+        import ssl
         
         id_tra = None
         if tipo_doc in ["betplay", "chance"] and data.extracted_id_tra:
@@ -739,8 +740,12 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
         url_validador = f"{OWO_PREMIOS_API_URL}/premios/pendientes?serie={id_tra}"
         try:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
             req = urllib.request.Request(url_validador, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as response:
                 result = json.loads(response.read().decode())
                 
             if result.get("success") == True and result.get("data"):
@@ -756,7 +761,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             if getattr(e, 'code', None) == 404:
                 mensaje_final = f"Tu ticket *{id_tra}* no tiene premios pendientes registrados por el momento."
             else:
-                mensaje_final = f"Hubo un error verificando el ticket en nuestro sistema. Detalle técnico: {type(e).__name__} - {str(e)}"
+                mensaje_final = "Hubo un error verificando el ticket en nuestro sistema (el servidor de consulta está ocupado). Por favor intenta más tarde."
         
         # Volvemos al menu independientemente del resultado
         session.paso = "MENU"
