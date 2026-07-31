@@ -738,6 +738,29 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
                 "paso_siguiente": "CONSULTA_TICKET"
             }
 
+        # Control de límite de consultas (15 por hora)
+        from backend.db.models import ConsultaTicketLog, get_colombia_time
+        import datetime
+        now = get_colombia_time()
+        one_hour_ago = now - datetime.timedelta(hours=1)
+        consultas_recientes = db.query(ConsultaTicketLog).filter(
+            ConsultaTicketLog.telefono == telefono,
+            ConsultaTicketLog.fecha_consulta >= one_hour_ago
+        ).count()
+
+        if consultas_recientes >= 15:
+            session.paso = "MENU"
+            db.commit()
+            return {
+                "mensaje": "⚠️ Has superado el límite máximo de 15 consultas por hora. Por favor, intenta de nuevo más tarde.\n\n💡 _Volviendo al menú principal..._",
+                "paso_siguiente": "MENU"
+            }
+        
+        # Registrar la nueva consulta
+        nuevo_log = ConsultaTicketLog(telefono=telefono, fecha_consulta=now)
+        db.add(nuevo_log)
+        db.commit()
+
         url_validador = f"{OWO_PREMIOS_API_URL}/premios/pendientes?serie={id_tra}"
         print(f"\n--- [DEBUG OWO] INICIANDO CONSULTA ---")
         print(f"Ticket/Serie: {id_tra}")

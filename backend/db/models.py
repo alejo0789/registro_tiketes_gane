@@ -77,3 +77,10 @@ class AdminUser(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+
+class ConsultaTicketLog(Base):
+    __tablename__ = "gane_consulta_ticket_logs"
+    
+    id = Column(Integer, primary_key=True)
+    telefono = Column(String(50), nullable=False)
+    fecha_consulta = Column(DateTime, default=get_colombia_time)
