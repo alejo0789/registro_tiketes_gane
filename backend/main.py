@@ -996,28 +996,9 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         elif tipo_doc == "invalido":
             return {"mensaje": "⚠️ La imagen enviada no parece ser un ticket válido. Por favor, asegúrate de enviar una foto clara del ticket.", "paso_siguiente": "TICKET"}
 
-        # ===== TEXTO MANUAL (compatibilidad antigua) =====
+        # ===== TEXTO MANUAL (deshabilitado) =====
         else:
-            val_ticket = data.extracted_ticket or texto
-            val_ticket = val_ticket.replace("-", "").replace(".", "").replace(" ", "").replace("#", "").strip()
-
-            if len(val_ticket) < 1:
-                return {"mensaje": "⚠️ Por favor envía la *foto de tu ticket Betplay o Chance* para registrarlo.", "paso_siguiente": "TICKET"}
-
-            existing = db.query(models.RegistroSorteo).filter(
-                models.RegistroSorteo.numero_registro == val_ticket
-            ).first()
-            if existing:
-                return {"mensaje": f"⚠️ El ticket *{val_ticket}* ya fue registrado anteriormente en un sorteo. Cada ticket solo puede ser usado una vez.", "paso_siguiente": "TICKET"}
-
-            session.numero_registro = val_ticket
-            session.tipo_ticket_pendiente = "manual"
-            session.paso = "FOTO"
-            db.commit()
-            return {
-                "mensaje": f"Ticket *{val_ticket}* recibido. 🏟️\n\nAhora envíame la *foto clara del ticket* para completar el registro.",
-                "paso_siguiente": "FOTO"
-            }
+            return {"mensaje": "⚠️ Por favor envía únicamente la *foto de tu ticket Betplay o Chance* para registrarlo. No se aceptan números escritos manualmente.", "paso_siguiente": "TICKET"}
 
     # --- PASO: FOTO ---
     if session.paso == "FOTO":
