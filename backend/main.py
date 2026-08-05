@@ -785,7 +785,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
 
         # Control de límite de consultas (15 por hora)
         from backend.db.models import ConsultaTicketLog, get_colombia_time
-        import datetime
+        
         now = get_colombia_time()
         one_hour_ago = now - datetime.timedelta(hours=1)
         consultas_recientes = db.query(ConsultaTicketLog).filter(
