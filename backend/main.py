@@ -45,6 +45,40 @@ def verify_n8n_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
     if x_api_key != WHATSAPP_API_KEY:
         raise HTTPException(status_code=403, detail="Acceso denegado. API Key inválida.")
 
+# ─── Función de validación de tickets en API OWO ────────────────────────────
+def validar_ticket_api(serie: str) -> bool:
+    import urllib.request
+    import urllib.error
+    import json
+    import ssl
+    if not serie:
+        return False
+    try:
+        url = f"{OWO_PREMIOS_API_URL}/formularios/no-premiados?serie={serie}"
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={'User-Agent': 'Agent-OWO/1.0'})
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as response:
+            raw_response = response.read().decode()
+            result = json.loads(raw_response)
+            
+            # Formatos de respuesta posibles
+            if isinstance(result, dict) and result.get("serie"):
+                return True
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and result[0].get("serie"):
+                return True
+            if isinstance(result, dict) and result.get("success") == True and result.get("data"):
+                return True
+                
+            return False
+    except urllib.error.HTTPError as e:
+        print(f"[validar_ticket_api] Ticket {serie} no valido o no encontrado, HTTP {e.code}")
+        return False
+    except Exception as e:
+        print(f"[validar_ticket_api] Error validando ticket {serie}: {e}")
+        return False
+
 # ─── Dependencia: verificar token de admin del dashboard ─────────────────────
 def verify_admin_token(authorization: Optional[str] = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -270,6 +304,13 @@ def register_to_sorteo(data: schemas.RegistroCreate, db: Session = Depends(get_d
     if not data.comprobante_url or not data.comprobante_url.strip():
         raise HTTPException(status_code=400, detail="La foto del ticket es obligatoria para el registro.")
 
+    # 1.5. Validate ticket API
+    if not validar_ticket_api(data.numero_registro):
+        raise HTTPException(
+            status_code=400,
+            detail=f"El ticket '{data.numero_registro}' no es válido o no existe en el sistema Gane."
+        )
+
     # 2. Handle User
     user = db.query(models.User).filter(models.User.cedula == data.cedula).first()
     if not user:
@@ -382,6 +423,10 @@ def register_from_whatsapp(data: schemas.WhatsAppRegistroCreate, db: Session = D
     data.cedula = re.sub(r"\D", "", data.cedula)
     data.telefono = re.sub(r"\D", "", data.telefono)
     
+    # Validate ticket API
+    if not validar_ticket_api(data.numero_sorteo):
+        raise HTTPException(status_code=400, detail=f"El ticket '{data.numero_sorteo}' no es válido en el sistema.")
+
     # 1. Direct registration from WhatsApp data
     # Find the current active sorteo automatically
     from backend.db.models import get_colombia_time
@@ -923,6 +968,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             identificacion = clean_num(data.extracted_identificacion)
             valor = clean_num(data.extracted_valor)
 
+            # Validar con la API OWO
+            if not validar_ticket_api(id_tra):
+                return {"mensaje": f"⚠️ El ticket Betplay con ID *{id_tra}* no es válido según nuestro sistema. Verifique que sea correcto.", "paso_siguiente": "TICKET"}
+
             # Verificar duplicado por id_tra globalmente
             existing = db.query(models.RegistroSorteo).filter(
                 models.RegistroSorteo.numero_registro == id_tra
@@ -958,6 +1007,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             id_tra = clean_num(data.extracted_id_tra)
             valor = clean_num(data.extracted_valor)
 
+            # Validar con la API OWO
+            if not validar_ticket_api(id_tra):
+                return {"mensaje": f"⚠️ El ticket Chance con ID *{id_tra}* no es válido según nuestro sistema. Verifique que sea correcto.", "paso_siguiente": "TICKET"}
+
             existing = db.query(models.RegistroSorteo).filter(
                 models.RegistroSorteo.numero_registro == id_tra
             ).first()
@@ -988,6 +1041,10 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         elif tipo_doc == "keno" and data.extracted_id_tra:
             id_tra = clean_num(data.extracted_id_tra)
             valor = clean_num(data.extracted_valor)
+
+            # Validar con la API OWO
+            if not validar_ticket_api(id_tra):
+                return {"mensaje": f"⚠️ El ticket Keno con ID *{id_tra}* no es válido según nuestro sistema. Verifique que sea correcto.", "paso_siguiente": "TICKET"}
 
             existing = db.query(models.RegistroSorteo).filter(
                 models.RegistroSorteo.numero_registro == id_tra
