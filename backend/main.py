@@ -142,6 +142,7 @@ def run_migrations():
                 "tipo_ticket_pendiente":   "VARCHAR(20)",
                 "identificacion_pendiente": "VARCHAR(100)",
                 "valor_pendiente":          "VARCHAR(50)",
+                "sorteo_id_pendiente":      "INTEGER",
             }
             for col, col_type in new_sess_cols.items():
                 if col not in sess_cols:
@@ -677,17 +678,14 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             return None
         return re.sub(r"[\.,\s]", "", val.strip())
 
-    # 1. Obtener Sorteo Activo
+    # 1. Obtener Sorteos Activos
     from backend.db.models import get_colombia_time
     today = get_colombia_time().date()
-    active_sorteo = db.query(models.SorteoConfig).filter(
+    active_sorteos = db.query(models.SorteoConfig).filter(
         models.SorteoConfig.activo == True,
         models.SorteoConfig.fecha_inicio <= today,
         models.SorteoConfig.fecha_fin >= today
-    ).first()
-
-    if not active_sorteo:
-        return {"mensaje": "Lo sentimos, no hay sorteos activos en este momento.", "paso_siguiente": "FIN"}
+    ).all()
 
     # --- Detectar tipo de documento que llegó en esta interacción ---
     tipo_doc = (data.tipo_documento_detectado or "").lower().strip()
@@ -735,20 +733,40 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
     if session.paso == "MENU":
         opcion = texto.strip()
         if opcion == "1":
-            if user:
-                session.paso = "TICKET"
-                db.commit()
+            if not active_sorteos:
                 return {
-                    "mensaje": "¡Perfecto! Envíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
-                    "paso_siguiente": "TICKET"
+                    "mensaje": "Lo sentimos, no hay sorteos activos en este momento para registrar tickets.",
+                    "paso_siguiente": "MENU"
                 }
+                
+            if len(active_sorteos) == 1:
+                session.sorteo_id_pendiente = active_sorteos[0].id
+                
+                if user:
+                    session.paso = "TICKET"
+                    db.commit()
+                    return {
+                        "mensaje": "¡Perfecto! Envíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
+                        "paso_siguiente": "TICKET"
+                    }
+                else:
+                    session.paso = "CEDULA"
+                    db.commit()
+                    premio_text = active_sorteos[0].premio or "la moto"
+                    return {
+                        "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, por favor *escribe tu número de cédula* (solo números).\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://ganeyumbo.com/wp-content/uploads/2024/02/PO-CMP-02_Politica_Para_El_Tratamiento_de_Datos_Personales_MR_V.03_-_2023-1.pdf",
+                        "paso_siguiente": "CEDULA"
+                    }
             else:
-                session.paso = "CEDULA"
+                session.paso = "SELECCION_SORTEO"
                 db.commit()
-                premio_text = active_sorteo.premio or "la moto"
+                msg = "Hay varios sorteos activos, ¿en cuál quieres participar?\n\n"
+                for i, sorteo in enumerate(active_sorteos, 1):
+                    msg += f"{i}️⃣ {sorteo.nombre_sorteo}\n"
+                msg += "\nResponde con el número de tu opción."
                 return {
-                    "mensaje": f"¡Perfecto! Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, por favor *escribe tu número de cédula* (solo números).\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://ganeyumbo.com/wp-content/uploads/2024/02/PO-CMP-02_Politica_Para_El_Tratamiento_de_Datos_Personales_MR_V.03_-_2023-1.pdf",
-                    "paso_siguiente": "CEDULA"
+                    "mensaje": msg,
+                    "paso_siguiente": "SELECCION_SORTEO"
                 }
         elif opcion == "2":
             session.paso = "CONSULTA_TICKET"
@@ -761,6 +779,35 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
             return {
                 "mensaje": "⚠️ Opción no válida.\n\nPor favor responde *1* para registrar un ticket nuevo o *2* para consultar un ticket ganador.",
                 "paso_siguiente": "MENU"
+            }
+
+    # --- PASO: SELECCION_SORTEO ---
+    if session.paso == "SELECCION_SORTEO":
+        opcion_str = texto.strip()
+        if not opcion_str.isdigit():
+            return {"mensaje": "⚠️ Opción no válida. Por favor responde con un número.", "paso_siguiente": "SELECCION_SORTEO"}
+            
+        opcion_idx = int(opcion_str) - 1
+        if opcion_idx < 0 or opcion_idx >= len(active_sorteos):
+            return {"mensaje": "⚠️ Opción no válida. Selecciona uno de los números de la lista.", "paso_siguiente": "SELECCION_SORTEO"}
+            
+        sorteo_seleccionado = active_sorteos[opcion_idx]
+        session.sorteo_id_pendiente = sorteo_seleccionado.id
+        
+        if user:
+            session.paso = "TICKET"
+            db.commit()
+            return {
+                "mensaje": f"¡Excelente! Has seleccionado *{sorteo_seleccionado.nombre_sorteo}*.\n\nEnvíame la *foto de tu ticket Betplay o Chance* 🏟️ para registrar tu participación.",
+                "paso_siguiente": "TICKET"
+            }
+        else:
+            session.paso = "CEDULA"
+            db.commit()
+            premio_text = sorteo_seleccionado.premio or "la moto"
+            return {
+                "mensaje": f"¡Excelente! Has seleccionado *{sorteo_seleccionado.nombre_sorteo}*. Estás participando por *{premio_text}* 🏙️.\n\nPara comenzar, por favor *escribe tu número de cédula* (solo números).\n\n_Sus datos serán tratados de acuerdo a nuestra política de privacidad. Puedes leerla aquí:_\nhttps://ganeyumbo.com/wp-content/uploads/2024/02/PO-CMP-02_Politica_Para_El_Tratamiento_de_Datos_Personales_MR_V.03_-_2023-1.pdf",
+                "paso_siguiente": "CEDULA"
             }
 
     # --- PASO: CONSULTA TICKET ---
@@ -1089,11 +1136,18 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         id_tra = session.numero_registro
         identificacion = session.identificacion_pendiente
         valor = session.valor_pendiente
+        
+        sorteo_id = session.sorteo_id_pendiente
+        if not sorteo_id and active_sorteos:
+            sorteo_id = active_sorteos[0].id
+            
+        sorteo_obj = db.query(models.SorteoConfig).filter(models.SorteoConfig.id == sorteo_id).first()
+        premio_sorteo = sorteo_obj.premio if sorteo_obj else "la moto"
 
         # Registrar en la DB
         new_reg = models.RegistroSorteo(
             cedula=session.cedula,
-            sorteo_id=active_sorteo.id,
+            sorteo_id=sorteo_id,
             numero_registro=id_tra,
             tipo_ticket=tipo,
             id_transaccion=id_tra,
@@ -1107,7 +1161,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         # Conteo para la moto
         total = db.query(func.count(models.RegistroSorteo.id)).filter(
             models.RegistroSorteo.cedula == session.cedula,
-            models.RegistroSorteo.sorteo_id == active_sorteo.id
+            models.RegistroSorteo.sorteo_id == sorteo_id
         ).scalar()
 
         MOTO_GOAL = 10
@@ -1142,7 +1196,7 @@ def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = D
         
         msg += f"Llevas *{total} tickets* registrados."
         
-        premio_text = active_sorteo.premio or "la moto"
+        premio_text = premio_sorteo
         if restantes > 0:
             msg += f"\n\nTe faltan *{restantes}* para participar por *{premio_text}*. 🏙️\n\nSi tienes otro ticket, envíalo ahora."
         else:

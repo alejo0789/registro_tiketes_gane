@@ -69,6 +69,7 @@ class WhatsAppSession(Base):
     identificacion_pendiente = Column(String(100), nullable=True)  # solo betplay
     valor_pendiente = Column(String(50), nullable=True)  # valor del ticket en proceso
     comprobante_url = Column(String(500), nullable=True)
+    sorteo_id_pendiente = Column(Integer, nullable=True)
     ultima_interaccion = Column(DateTime, default=get_colombia_time, onupdate=get_colombia_time)
 
 class AdminUser(Base):
