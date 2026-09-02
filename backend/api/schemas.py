@@ -178,6 +178,19 @@ class ReceiptItem(BaseModel):
     fecha_creacion: datetime
     nombre_sorteo: str
 
+class RegistrationExportItem(BaseModel):
+    cedula: str
+    nombre_completo: str
+    telefono: Optional[str] = None
+    numero_registro: str
+    tipo_ticket: Optional[str] = None
+    id_transaccion: Optional[str] = None
+    identificacion: Optional[str] = None
+    valor: Optional[str] = None
+    comprobante_url: Optional[str] = None
+    fecha_creacion: datetime
+    nombre_sorteo: str
+
 # Auth / Login Schemas
 class AdminLogin(BaseModel):
     username: str

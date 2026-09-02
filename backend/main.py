@@ -661,6 +661,65 @@ def get_user_receipts(cedula: str, sorteo_id: Optional[int] = None, db: Session 
         ) for r in results
     ]
 
+@app.get("/dashboard/export", response_model=List[schemas.RegistrationExportItem], dependencies=[Depends(verify_admin_token)])
+def export_dashboard_data(
+    sorteo_id: Optional[int] = Query(None),
+    search: Optional[str] = Query(None),
+    ticket_number: Optional[str] = Query(None),
+    search_ticket: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(
+        models.User.cedula,
+        models.User.nombre_completo,
+        models.User.telefono,
+        models.RegistroSorteo.numero_registro,
+        models.RegistroSorteo.tipo_ticket,
+        models.RegistroSorteo.id_transaccion,
+        models.RegistroSorteo.identificacion,
+        models.RegistroSorteo.valor,
+        models.RegistroSorteo.comprobante_url,
+        models.RegistroSorteo.fecha_creacion,
+        models.SorteoConfig.nombre_sorteo
+    ).join(models.RegistroSorteo, models.User.cedula == models.RegistroSorteo.cedula)\
+     .join(models.SorteoConfig, models.RegistroSorteo.sorteo_id == models.SorteoConfig.id)
+    
+    if sorteo_id:
+        query = query.filter(models.RegistroSorteo.sorteo_id == sorteo_id)
+    
+    if search:
+        search_val = f"%{search}%"
+        query = query.filter(
+            (models.User.nombre_completo.ilike(search_val)) |
+            (models.User.cedula.ilike(search_val)) |
+            (models.User.telefono.ilike(search_val))
+        )
+        
+    t_search = ticket_number or search_ticket
+    if t_search:
+        query = query.filter(
+            (models.RegistroSorteo.numero_registro.ilike(f"%{t_search}%")) |
+            (models.RegistroSorteo.id_transaccion.ilike(f"%{t_search}%"))
+        )
+        
+    results = query.order_by(models.RegistroSorteo.fecha_creacion.desc()).all()
+    
+    return [
+        schemas.RegistrationExportItem(
+            cedula=r.cedula,
+            nombre_completo=r.nombre_completo,
+            telefono=r.telefono,
+            numero_registro=r.numero_registro,
+            tipo_ticket=r.tipo_ticket,
+            id_transaccion=r.id_transaccion,
+            identificacion=r.identificacion,
+            valor=r.valor,
+            comprobante_url=r.comprobante_url,
+            fecha_creacion=r.fecha_creacion,
+            nombre_sorteo=r.nombre_sorteo
+        ) for r in results
+    ]
+
 @app.post("/whatsapp/interact", response_model=schemas.WhatsAppInteractResponse, dependencies=[Depends(verify_n8n_key)])
 def whatsapp_orchestrator(data: schemas.WhatsAppInteractRequest, db: Session = Depends(get_db)):
     """

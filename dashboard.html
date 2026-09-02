@@ -8,6 +8,7 @@
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="acertemos_premium_ui/resources/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .dashboard-container {
             max-width: 1200px;
@@ -629,13 +630,22 @@
                 <h1 style="color: var(--primary-color); line-height: 1;">Dashboard Sorteos</h1>
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Gestión de participantes y sorteos</p>
             </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <label style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">Sorteo:</label>
                 <select id="sorteoFilter">
                     <option value="">TODOS</option>
                 </select>
                 <input type="text" id="searchFilter" name="search_random_filter" placeholder="Buscar nombre, cédula o tel..." oninput="debouncedFilter()" autocomplete="new-password" data-lpignore="true">
                 <input type="search" id="ticketFilter" name="ticket_random_filter" placeholder="Buscar # ticket..." oninput="debouncedFilter()" autocomplete="new-password" data-lpignore="true">
+                <button class="btn-premium btn-outline" onclick="exportToExcel()" style="padding: 10px 15px;" title="Exportar a Excel">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Exportar
+                </button>
                 <button class="btn-premium" onclick="openCreateModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -1065,6 +1075,79 @@
         }
 
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        async function exportToExcel() {
+            const sorteoId = document.getElementById('sorteoFilter').value;
+            const search = document.getElementById('searchFilter').value;
+            const ticket = document.getElementById('ticketFilter').value;
+
+            let exportParams = new URLSearchParams();
+            if (sorteoId) exportParams.append('sorteo_id', sorteoId);
+            if (search) exportParams.append('search', search);
+            if (ticket) exportParams.append('ticket_number', ticket);
+
+            let fetchUrl = `${API_URL}dashboard/export` + (exportParams.toString() ? '?' + exportParams.toString() : '');
+
+            try {
+                const res = await fetch(fetchUrl, { headers: AUTH_HEADERS });
+                if (!res.ok) throw new Error("Error obteniendo datos: " + res.status);
+                const data = await res.json();
+
+                if (!data || data.length === 0) {
+                    alert("No hay datos para exportar.");
+                    return;
+                }
+
+                // Prepare data for Excel
+                const worksheetData = data.map(item => ({
+                    "Cédula": item.cedula,
+                    "Nombre Completo": item.nombre_completo,
+                    "Teléfono": item.telefono || 'N/A',
+                    "Tipo Ticket": (item.tipo_ticket || 'N/A').toUpperCase(),
+                    "Número Tiquete / ID.TRA": item.numero_registro,
+                    "Identificación": item.identificacion || 'N/A',
+                    "Valor": item.valor ? `$${Number(item.valor).toLocaleString('es-CO')}` : 'N/A',
+                    "Comprobante URL": item.comprobante_url || 'N/A',
+                    "Fecha Registro": item.fecha_creacion ? new Date(item.fecha_creacion).toLocaleString('es-CO') : 'N/A',
+                    "Sorteo": item.nombre_sorteo
+                }));
+
+                // Create Workbook
+                const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+
+                // Auto-size columns
+                const colWidths = [
+                    { wch: 15 }, // Cédula
+                    { wch: 30 }, // Nombre
+                    { wch: 15 }, // Teléfono
+                    { wch: 15 }, // Tipo Ticket
+                    { wch: 25 }, // Número Tiquete / ID.TRA
+                    { wch: 18 }, // Identificación
+                    { wch: 15 }, // Valor
+                    { wch: 40 }, // Comprobante URL
+                    { wch: 22 }, // Fecha
+                    { wch: 25 }  // Sorteo
+                ];
+                worksheet['!cols'] = colWidths;
+
+                // File name
+                let fileName = "Reporte_Registros_General.xlsx";
+                if (sorteoId && allSorteos && allSorteos.length > 0) {
+                    const currentSorteo = allSorteos.find(s => s.id == sorteoId);
+                    if (currentSorteo) {
+                        fileName = `Reporte_Registros_${currentSorteo.nombre_sorteo}.xlsx`;
+                    }
+                }
+
+                // Download
+                XLSX.writeFile(workbook, fileName.replace(/[ /\\:]/g, "_"));
+            } catch (error) {
+                console.error("Export error:", error);
+                alert("Error al exportar a Excel: " + error.message);
+            }
+        }
 
         async function viewReceipts(cedula) {
             const sorteoId = document.getElementById('sorteoFilter').value;
